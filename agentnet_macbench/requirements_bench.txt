@@ -1,0 +1,11 @@
+# AgentNet + GAIA 运行所需（Python 3.10+）
+numpy
+pandas
+pyarrow          # 读 GAIA parquet
+PyYAML
+networkx
+openpyxl         # xlsx 附件
+python-docx      # docx 附件
+python-pptx      # pptx 附件
+pypdf            # pdf 附件 / 网页 pdf
+FlagEmbedding    # 原版 AgentNet 的 bge-large-en-v1.5 编码器（会带上 torch / transformers）

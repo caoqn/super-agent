@@ -58,9 +58,6 @@ ReAct-master/data/
 AgentNet-main/AgentNet_Code/save/
 AgentNet-main/AgentNet_Code/log/
 workspace/
-react_adapter/results/
-masbench_aorchestra/results/
-masbench_aorchestra/workspace/
 MASBench-main/Reasoning/results/
 MASBench-main/Reasoning/logs/
 MASBench-main/Scheduling/logs/
@@ -92,10 +89,15 @@ MASBench-main/
 MAC_Bench-1.0/
 agentnet_gaia_run/
 agentnet_macbench_run/
-agentnet_masbench/MASBench_selected_30/*
-!agentnet_masbench/MASBench_selected_30/selection_manifest.json
 results/
 save/
 .envrc
 *.pem
 *.key
+
+# Method adapter outputs and local benchmark inputs
+methods/agentnet/masbench/MASBench_selected_30/
+methods/agentnet/masbench/Reasoning/results_agentnet_*.jsonl
+methods/agentnet/masbench/Game/.preset_logs/
+methods/agentnet/masbench/Game/txt_logs/
+runs/

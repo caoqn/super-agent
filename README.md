@@ -10,6 +10,10 @@ This repository separates **method implementations** from their **benchmark adap
 - `configs/matrix.yaml` lists the method/benchmark combinations currently represented here.
 - `data/manifests/` contains the public MASBench sample-selection manifest. Obtain benchmark task data from its official source.
 
+## Code and dependencies
+
+Keep this project's method implementations and benchmark adapters in Git; install their Python packages and upstream frameworks separately into the run environment. Put benchmark-specific setup instructions and dependency lists beside the adapter, and install only what the selected run needs instead of maintaining one large environment for every baseline. For upstream frameworks such as AgentNet and AOrchestra, record the source and revision and keep their checkout outside tracked source. Keep downloaded benchmark data, container images, and run outputs outside Git; track only small manifests needed to reproduce selections.
+
 ## Configuration
 
 Copy `.env.example` to `.env` at the repository root and set your OpenAI-compatible base URL and API key. MASBench scripts default to DeepSeek Flash; set provider-specific cost rates when measuring cost. Do not commit `.env`.

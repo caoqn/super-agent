@@ -56,3 +56,7 @@ The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/ma
 ## Super Agent
 
 The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.
+
+## Evoteam
+
+Evoteam 的 GAIA、MAC-Bench 和 MASBench 适配器、协作运行时、提示词池及检查说明见 [methods/Evoteam/README.md](methods/Evoteam/README.md)。安装依赖：`pip install -r requirements/base.txt`；从仓库根目录运行 `python scripts/run.py --config configs/Evoteam_macbench.json --dry-run --max-items 1`（需先准备外部数据）。

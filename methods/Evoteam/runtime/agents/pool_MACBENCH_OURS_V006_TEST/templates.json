@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "families": [
+    {
+      "family_id": "family_21a22b81e3a2",
+      "description": "A build-and-independently-verify collaboration pattern for substantial, multi-part implementation work where the deliverable is judged by observed behavior rather than by source similarity. One member owns editing and iterating in the live workspace and drives the project's own public checks; a second member independently re-derives the requirement set and verification conditions and re-runs behavioral and artifact-level checks instead of trusting reported results; a third member reconciles the written specification, supporting documents, and actual observed state, tracing conflicts and identity/reference mismatches back to source evidence. The members complement one another by separating construction, adversarial checking, and evidence reconciliation so that no single agent's assumptions define correctness. Verification principles: prefer reproducible, recomputed evidence over narrative claims, confirm results hold from a fresh consumer/observer perspective, treat passes as provisional until independently reproduced, and never silently accept or override conflicting evidence. Applicability boundary: appropriate when a task spans several interdependent responsibilities with a spec-plus-tests reference surface and the main risk is partial or plausible-looking but incorrect delivery; less appropriate for narrow single-file edits or purely exploratory investigation with no concrete deliverable.",
+      "current_template_id": "tpl_family_21a22b81e3a2_6ecaf7c4",
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "created_at": "2026-11-14T11:09:18.591953+00:00",
+      "updated_at": "2026-11-14T11:09:18.591958+00:00"
+    },
+    {
+      "family_id": "family_67cdb6285abd",
+      "description": "A reconciliation-first collaboration pattern for work whose deliverable is authoritative edits across several linked business applications plus one consolidated handover. An evidence reconciler traces identities, amounts and dates back to the primary source documents and registers, surfacing conflicts or unsupported entries; a constraint solver converts that reconciled picture into an explicit, explicable plan that respects eligibility, capacity, timing, dependency and budget bounds; a state operator then applies only the approved plan to live application state and reads the objects back to report literal postconditions; an independent verifier re-derives the expected outcome from the source evidence and compares it with the observed state, catching missing, duplicated or inconsistent records. Members complement one another by separating what is true (evidence), what is permitted and feasible (planning), what was actually written (execution) and what is proven (verification), so that no stage silently substitutes inference for a source fact and no claimed change rests on a receipt alone. Applicability stops at tasks that require direct multi-application data correction and arrangement recordkeeping with preserved provenance; it does not cover software construction, and single-record lookups or single-field edits do not need the full pattern.",
+      "current_template_id": "tpl_family_67cdb6285abd_ff508c92",
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "created_at": "2026-11-14T08:13:29.474663+00:00",
+      "updated_at": "2026-11-14T08:13:29.474760+00:00"
+    }
+  ],
+  "templates": [
+    {
+      "template_id": "tpl_family_21a22b81e3a2_6ecaf7c4",
+      "family_id": "family_21a22b81e3a2",
+      "version": 1,
+      "members": [
+        {
+          "agent_id": "software_builder",
+          "role": "software_builder"
+        },
+        {
+          "agent_id": "verifier",
+          "role": "independent_verifier"
+        },
+        {
+          "agent_id": "evidence_reconciler",
+          "role": "evidence_reconciler"
+        }
+      ],
+      "status": "active",
+      "version_history": [],
+      "evidence_task_ids": [
+        "flit_packages",
+        "marshmallow_schemas",
+        "paperless_workflows"
+      ],
+      "successful_task_ids": [
+        "flit_packages",
+        "marshmallow_schemas"
+      ],
+      "failed_task_ids": [
+        "paperless_workflows"
+      ],
+      "task_member_evidence": {
+        "flit_packages": [
+          "software_builder",
+          "verifier",
+          "evidence_reconciler"
+        ],
+        "marshmallow_schemas": [
+          "software_builder",
+          "verifier"
+        ],
+        "paperless_workflows": [
+          "software_builder",
+          "verifier"
+        ]
+      },
+      "created_at": "2026-11-14T11:09:18.591866+00:00",
+      "updated_at": "2026-11-14T11:09:18.591909+00:00"
+    },
+    {
+      "template_id": "tpl_family_67cdb6285abd_ff508c92",
+      "family_id": "family_67cdb6285abd",
+      "version": 1,
+      "members": [
+        {
+          "agent_id": "evidence_reconciler",
+          "role": "evidence_reconciler"
+        },
+        {
+          "agent_id": "constraint_solver",
+          "role": "constraint_solver"
+        },
+        {
+          "agent_id": "state_operator",
+          "role": "state_operator"
+        },
+        {
+          "agent_id": "verifier",
+          "role": "independent_verifier"
+        }
+      ],
+      "status": "active",
+      "version_history": [],
+      "evidence_task_ids": [
+        "op26_business_finance_002",
+        "op26_project_content_operations_001",
+        "op26_service_administration_007"
+      ],
+      "successful_task_ids": [
+        "op26_project_content_operations_001"
+      ],
+      "failed_task_ids": [
+        "op26_business_finance_002",
+        "op26_service_administration_007"
+      ],
+      "task_member_evidence": {
+        "op26_business_finance_002": [
+          "evidence_reconciler",
+          "constraint_solver"
+        ],
+        "op26_project_content_operations_001": [
+          "evidence_reconciler",
+          "constraint_solver",
+          "state_operator",
+          "verifier"
+        ],
+        "op26_service_administration_007": [
+          "state_operator",
+          "constraint_solver"
+        ]
+      },
+      "created_at": "2026-11-14T08:13:29.474427+00:00",
+      "updated_at": "2026-11-14T08:13:29.474601+00:00"
+    }
+  ]
+}

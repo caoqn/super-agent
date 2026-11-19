@@ -89,7 +89,7 @@ MASBench-main/
 MAC_Bench-1.0/
 agentnet_gaia_run/
 agentnet_macbench_run/
-results/
+results/*
 save/
 .envrc
 *.pem
@@ -105,3 +105,15 @@ runs/
 # Local benchmark data and generated artifacts
 /benchmarks/*/data/
 /.artifacts/
+
+# Evoteam local credentials and runtime artifacts
+.env
+.env.*
+*.env
+!.env.example
+.venv*/
+external/
+results/**
+!results/README.md
+methods/Evoteam/runtime/runs/
+methods/Evoteam/runtime/sessions/

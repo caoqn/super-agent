@@ -1,0 +1,17 @@
+{
+  "benchmark": "macbench",
+  "env": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat",
+    "META_TEAM_MAX_STEPS": "unlimited"
+  },
+  "args": [
+    "--team",
+    "pool_MACBENCH_OURS_V006_TEST",
+    "--split",
+    "test",
+    "--workers",
+    "1"
+  ]
+}

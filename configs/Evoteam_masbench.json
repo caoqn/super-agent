@@ -1,0 +1,16 @@
+{
+  "benchmark": "masbench",
+  "env": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat"
+  },
+  "args": [
+    "--team",
+    "pool_MASBENCH_DYNAMIC_6",
+    "--split",
+    "test",
+    "--workers",
+    "1"
+  ]
+}

@@ -1,0 +1,7 @@
+# Configuration record only; pass corresponding arguments to the runner.
+benchmark: masbench
+adapter: benchmarks/masbench/adapters/super_agent/adapter.py
+service_url: http://127.0.0.1:3082
+concurrency: 1
+timeout_seconds: 1200
+game_rounds: 50

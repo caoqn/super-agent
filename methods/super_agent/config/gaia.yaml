@@ -1,0 +1,7 @@
+# Configuration record only; pass corresponding arguments to the runner.
+benchmark: gaia
+split: evoteam_test_100
+adapter: benchmarks/gaia/adapters/super_agent/adapter.py
+service_url: http://127.0.0.1:3082
+concurrency: 4
+timeout_seconds: 1200

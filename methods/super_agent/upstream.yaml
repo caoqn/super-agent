@@ -1,0 +1,12 @@
+method: super_agent
+repository: https://github.com/deepseek-ai/dsh-superagent-prototype
+commit: 8c32a9dc5d72c033816c6a8110b37f40cf94fba4
+runtime: external
+adapters:
+  gaia: benchmarks/gaia/adapters/super_agent/adapter.py
+  masbench: benchmarks/masbench/adapters/super_agent/adapter.py
+  macbench: benchmarks/macbench/adapters/super_agent/adapter.py
+macbench_harness:
+  repository: https://github.com/rzchen777-wq/MAC_Bench
+  commit: c70d962ee8e428a6d9bae42af8d92e086581ee0d
+  note: Uses MAC-Bench's own Superagent baseline, not the DSH service above.

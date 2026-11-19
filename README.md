@@ -51,3 +51,8 @@ Run the benchmark-specific adapters from the repository root:
 - Vanilla: follow [`benchmarks/masbench/adapters/vanilla/README.md`](benchmarks/masbench/adapters/vanilla/README.md).
 
 The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/masbench/README.md). The MASBench license and task attribution remain alongside its AgentNet adapter; obtain task inputs from official benchmark sources.
+
+
+## Super Agent
+
+The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.

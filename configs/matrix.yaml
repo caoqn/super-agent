@@ -4,3 +4,4 @@ methods:
   aorchestra: [masbench]
   react: [masbench]
   vanilla: [masbench]
+  super_agent: [gaia, macbench, masbench]

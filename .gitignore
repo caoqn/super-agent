@@ -101,3 +101,7 @@ benchmarks/masbench/adapters/agentnet/Reasoning/results_agentnet_*.jsonl
 benchmarks/masbench/adapters/agentnet/Game/.preset_logs/
 benchmarks/masbench/adapters/agentnet/Game/txt_logs/
 runs/
+
+# Local benchmark data and generated artifacts
+/benchmarks/*/data/
+/.artifacts/

@@ -1,9 +1,10 @@
+from methods.Evoteam.bootstrap import source_root
 import asyncio
 import json
 from argparse import Namespace
 from pathlib import Path
 
-from benchmarks.adapter_macbench import (
+from methods.Evoteam.macbench.adapter import (
     MacBenchAdapter,
     _load_catalog,
     _set_runtime_pool_tools,
@@ -64,7 +65,7 @@ def test_output_contract_uses_stateful_environment_completion():
 
 
 def test_meta_team_tool_registry_loads_macbench_bridge():
-    tool = ToolRegistry(str(Path(__file__).resolve().parents[1] / "methods/Evoteam/runtime/tools")).get("macbench")
+    tool = ToolRegistry(str(source_root() / "tools")).get("macbench")
 
     assert tool is not None
     assert tool.to_openai_tool()["function"]["name"] == "macbench"

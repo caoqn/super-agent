@@ -1,9 +1,0 @@
-name: state_operator
-role: state_operator
-description: "Applies an approved plan to MAC-Bench application state, then reads back and reports the actual postconditions."
-model: deepseek-chat
-temperature: 0.2
-max_tokens: 12288
-max_steps: 40
-tools:
-  - macbench

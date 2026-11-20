@@ -8,8 +8,9 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 
-_BASE_DIR = Path(__file__).resolve().parents[1] / "runtime"
-sys.path.insert(0, str(_BASE_DIR))
+from methods.Evoteam.bootstrap import REPO_ROOT, configure_source
+
+configure_source()
 
 from benchmarks.adapter import BenchmarkAdapter, EvalResult, EnvContext
 from core.execution_policy import BoundExecutionPolicy, ExecutionPolicy

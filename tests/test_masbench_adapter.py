@@ -1,6 +1,8 @@
 """Offline contract tests for the MASBench-to-Meta-Team adapter."""
 from __future__ import annotations
 
+from methods.Evoteam.bootstrap import source_root
+
 import argparse
 import asyncio
 import json
@@ -10,7 +12,7 @@ from types import SimpleNamespace
 from pathlib import Path
 import yaml
 
-from benchmarks.adapter_masbench import MASBenchAdapter, _squad_f1
+from methods.Evoteam.masbench.adapter import MASBenchAdapter, _squad_f1
 
 
 class MASBenchAdapterTests(unittest.TestCase):
@@ -44,7 +46,7 @@ class MASBenchAdapterTests(unittest.TestCase):
                          {self.adapter.get_item_id(x) for x in self.test})
 
     def test_dynamic_six_member_pool_is_default_and_has_official_prompt_files(self):
-        pool = Path(__file__).resolve().parents[1] / "methods/Evoteam/runtime/agents" / "pool_MASBENCH_DYNAMIC_6"
+        pool = source_root() / "agents" / "pool_MASBENCH_DYNAMIC_6"
         self.assertEqual(self.adapter.default_team, "pool_MASBENCH_DYNAMIC_6")
         self.assertEqual(len(list(pool.glob("*/config.yaml"))), 7)
         for name in ("planner", "evidence_agent", "schedule_agent", "game_agent",

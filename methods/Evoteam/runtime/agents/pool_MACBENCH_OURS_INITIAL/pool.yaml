@@ -1,9 +1,0 @@
-chairman: chairman
-settings:
-  max_seconds: 7200
-  max_messages: 300
-  reflection_phase_timeout: 900
-  team_selection_enabled: true
-  answer_agent_required: false
-name: MAC-Bench initial capability pool
-description: "Task-specific collaboration roles for evidence reconciliation, constraint solving, state changes, software work, and independent verification."

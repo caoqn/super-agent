@@ -1,7 +1,7 @@
 # 来源说明
 
-此目录是现有 `new code` 方法实现的整理导出。原始代码自述基于 Meta-Team；保留了原实现与提示词，不代表本次新增独立算法。
+Evoteam 方法源码由外部仓库 https://github.com/caoqn/EvoTeam 提供。本评测仓库仅保留三个数据集的适配器、实验配置和相关数据读取、评分与准备脚本；不分发方法核心、工具库、提示词或 agent 池。
 
-GAIA、MAC-Bench、MASBench 的完整源代码和原始数据由使用者另行获取并遵循各自许可。本包仅提供适配代码、MASBench 固定划分题号及本地数据准备脚本。MAC-Bench 使用上游评分器；MASBench Game 使用上游环境，worker 只是进程桥接。
+适配器来自原单数据集实验实现；其接口版本与公开混合评测版本不同，兼容性见 `methods/Evoteam/upstream.yaml`。GAIA、MAC-Bench、MASBench 的数据与环境需另行取得并遵循各自许可。MAC-Bench 使用上游评分器，MASBench Game worker 是上游环境的进程桥接。
 
-原源目录没有可直接随包继承的项目 LICENSE，本次未替作者指定新许可证。发布仓库需沿用实际权利人允许的许可并补充上游引用。
+原源目录没有可直接继承的 LICENSE，本次未替作者指定新许可证。

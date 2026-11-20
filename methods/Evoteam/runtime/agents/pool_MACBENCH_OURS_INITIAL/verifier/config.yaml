@@ -1,9 +1,0 @@
-name: verifier
-role: independent_verifier
-description: "Independently checks task requirements, resulting application state or software behavior, and reported evidence; read-only."
-model: deepseek-chat
-temperature: 0.2
-max_tokens: 12288
-max_steps: 35
-tools:
-  - macbench

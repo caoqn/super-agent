@@ -1,4 +1,4 @@
-# Core runtime for GAIA, MAC-Bench and MASBench adapters.
+# Adapter dependencies; install external EvoTeam dependencies separately.
 litellm==1.80.17
 pyyaml>=6.0
 aiohttp>=3.9.0

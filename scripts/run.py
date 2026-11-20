@@ -15,7 +15,7 @@ benchmark = config["benchmark"]
 if benchmark not in {"gaia", "macbench", "masbench"}:
     p.error("benchmark must be gaia, macbench, or masbench")
 env = os.environ.copy()
-# Explicit config controls model independently from credentials in the env file.
+# Config supplies defaults; the external method may load env-file overrides.
 env.update({str(k): str(v) for k,v in config.get("env", {}).items()})
 command = [sys.executable, str(ROOT / "methods/Evoteam" / benchmark / "run.py"),
            *config.get("args", []), *extra]

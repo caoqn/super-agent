@@ -115,5 +115,3 @@ runs/
 external/
 results/**
 !results/README.md
-methods/Evoteam/runtime/runs/
-methods/Evoteam/runtime/sessions/

@@ -1,9 +1,0 @@
-name: chairman
-role: task_coordinator
-description: "Selects a minimal MAC-Bench team, coordinates its work, resolves gaps, and submits a verified completion summary."
-model: deepseek-chat
-temperature: 0.2
-max_tokens: 16384
-max_steps: 50
-tools:
-  - macbench

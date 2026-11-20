@@ -14,8 +14,9 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-BASE_DIR = Path(__file__).resolve().parents[1] / "runtime"
-sys.path.insert(0, str(BASE_DIR))
+from methods.Evoteam.bootstrap import REPO_ROOT, configure_source
+
+configure_source()
 
 from benchmarks.adapter import BenchmarkAdapter, EnvContext, EvalResult
 from core.execution_policy import ExecutionPolicy
@@ -23,10 +24,10 @@ from core.output_contract import OutputContract
 
 DEFAULT_SPLIT_DIR = Path(os.environ.get(
     "MASBENCH_SPLIT_DIR",
-    str(BASE_DIR.parents[2] / "data" / "masbench_split18_test90"),
+    str(REPO_ROOT / "data" / "masbench_split18_test90"),
 ))
-DEFAULT_SOURCE_CANDIDATES = (BASE_DIR.parents[2] / "external" / "MASBench-main",)
-GAME_WORKER = BASE_DIR.parents[2] / "benchmarks" / "masbench" / "game" / "worker.py"
+DEFAULT_SOURCE_CANDIDATES = (REPO_ROOT / "external" / "MASBench-main",)
+GAME_WORKER = REPO_ROOT / "benchmarks" / "masbench" / "game" / "worker.py"
 
 
 
@@ -44,7 +45,7 @@ class GameRPC:
         skill_root = Path(skill_root_value).expanduser() if skill_root_value else None
         dependency_dir = skill_root / ".masbench_deps" if skill_root else None
         if dependency_dir is None or not dependency_dir.exists():
-            candidates = [BASE_DIR.parents[2] / "external" / ".masbench_deps"]
+            candidates = [REPO_ROOT / "external" / ".masbench_deps"]
             dependency_dir = next((p for p in candidates if p.exists()), None)
         if dependency_dir is None:
             raise FileNotFoundError(

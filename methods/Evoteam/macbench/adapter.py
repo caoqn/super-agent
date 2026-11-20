@@ -14,8 +14,9 @@ from typing import Any
 
 import yaml
 
-_BASE_DIR = Path(__file__).resolve().parents[1] / "runtime"
-sys.path.insert(0, str(_BASE_DIR))
+from methods.Evoteam.bootstrap import REPO_ROOT, configure_source
+
+configure_source()
 
 from benchmarks.adapter import BenchmarkAdapter, EnvContext, EvalResult
 from core.execution_policy import BoundExecutionPolicy, ExecutionPolicy
@@ -24,7 +25,7 @@ from core.task_budget import TaskBudget, TaskBudgetExceeded
 
 
 _DEFAULT_MAC_BENCH_ROOT = (
-    _BASE_DIR.parents[2] / "external" / "MAC_Bench-main"
+    REPO_ROOT / "external" / "MAC_Bench-main"
 )
 
 

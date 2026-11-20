@@ -1,0 +1,5 @@
+# Skill-MAS MASBench selection
+
+Only ID manifests and the supplied split audit are versioned here. `train_manifest.json` contains 18 tasks (6/category); `test_manifest.json` contains 90 tasks (30/category), seed42. Test IDs match `../../masbench_seed42_selection_manifest.json`. Training IDs are disjoint from test IDs. The source audit additionally reports excluding matching reasoning families/questions, calendars and game map content; those content-level checks were performed by the original local split script and are not recomputed by the public ID-only checks.
+
+Obtain actual Reasoning payloads, calendars, reference answers and game maps from MASBench separately. The local `reasoning_train.json`, `reasoning_test.json` and archive-dependent `build_split.py` are not uploaded. To reproduce this fixed selection, the adapter directly indexes the released IDs against the external source. The original split-generation algorithm still needs a portable public script if new selections must be regenerated.

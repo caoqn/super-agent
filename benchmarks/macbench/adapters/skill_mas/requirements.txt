@@ -1,0 +1,2 @@
+-r ../../../../methods/skill_mas/requirements.txt
+# Install the external MAC-Bench checkout separately; see README.md.

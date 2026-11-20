@@ -1,0 +1,2 @@
+# Optional SDK for the AgentNet MASBench Game adapter's Gemini client.
+google-genai

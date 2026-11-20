@@ -1,0 +1,37 @@
+--- a/template/sub_agent.py
++++ b/template/sub_agent.py
+@@ -196,6 +196,34 @@
+                 usage=merged,
+                 request_payload=request_payload,
+             )
++        elif str(tc.get("execution_mode", "")).strip().lower() == "native_tool" and tool_call_fn is not None:
++            # Native benchmark bridge. The bridge owns the benchmark-specific
++            # tool schemas, workspace, stateful services, and evaluator. It
++            # receives a structured payload so it can preserve role and task
++            # context while running an arbitrary number of tool turns.
++            native_payload = {
++                "role_name": self.role_name,
++                "role_instruction": self.role_instruction,
++                "task_input": active_user_prompt,
++                "prompt": (
++                    f"[Sub-agent role]\n{self.role_name}\n\n"
++                    f"[Sub-task instruction]\n{self.role_instruction}\n\n"
++                    f"[Task input]\n{active_user_prompt}"
++                ),
++            }
++            # Invoke once: synchronous callbacks may mutate benchmark state.
++            if inspect.iscoroutinefunction(tool_call_fn):
++                native_ret = tool_call_fn(native_payload)
++            else:
++                native_ret = await asyncio.to_thread(tool_call_fn, native_payload)
++            if inspect.isawaitable(native_ret):
++                native_ret = await native_ret
++            text, native_usage = native_ret
++            return SubAgentResult(
++                text=str(text or "").strip(),
++                usage=native_usage or {},
++                request_payload=request_payload,
++            )
+         elif str(tc.get("execution_mode", "")).strip().lower() == "vita_tool" and tool_call_fn is not None:
+             # ── VitaBench two-phase execution ──
+             # Phase 1 (Reasoning): Use text_call_fn (no tools) to first understand the sub-task,

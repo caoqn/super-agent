@@ -1,0 +1,110 @@
+--- a/skill_mas/openai_async_client.py
++++ b/skill_mas/openai_async_client.py
+@@ -234,10 +234,25 @@
+
+         raw_key = api_key or (row.get("api_key") if isinstance(row, dict) else None)
+         self.api_key = _resolve_api_key(str(raw_key) if raw_key is not None else None)
+-        self.base_url = base_url or (row.get("base_url") if isinstance(row, dict) else None)
++        # An explicitly selected experiment env file controls the provider
++        # endpoint, just as it controls the API key. Keep experiment
++        # environments isolated when runs are launched separately.
++        self.base_url = (
++            base_url
++            or os.environ.get("DEV_API_BASE")
++            or (row.get("base_url") if isinstance(row, dict) else None)
++        )
+         self.reasoning_effort = row.get("reasoning_effort") if isinstance(row, dict) else None
+         self.temperature = row.get("temperature") if isinstance(row, dict) else None
+         self.max_tokens = row.get("max_tokens") if isinstance(row, dict) else None
++        # Optional smoke/CI guard. Formal experiments keep model_config.json's
++        # value; a lower cap makes connectivity checks finish predictably.
++        env_max_tokens = os.environ.get("SKILL_MAS_MAX_TOKENS", "").strip()
++        if env_max_tokens:
++            try:
++                self.max_tokens = max(1, int(env_max_tokens))
++            except ValueError:
++                pass
+         eb = row.get("extra_body") if isinstance(row, dict) else None
+         self.extra_body: dict[str, Any] | None = eb if isinstance(eb, dict) else None
+
+@@ -247,11 +262,17 @@
+             read=_DEFAULT_READ_TIMEOUT,
+             write=_DEFAULT_CONNECT_TIMEOUT,
+         )
++        # Formal runs may execute in Terminal.app on hosts with a malformed system
++        # proxy URL.  Allow the experiment launcher to force direct transport while
++        # preserving the SDK default for existing callers.
++        trust_env = os.environ.get("SKILL_MAS_TRUST_ENV", "1").strip().lower() not in {"0", "false", "no"}
++        http_client = httpx.AsyncClient(trust_env=trust_env, timeout=_timeout)
+         self.client = AsyncOpenAI(
+             api_key=self.api_key,
+             base_url=self.base_url,
+             timeout=_timeout,
+             max_retries=5,
++            http_client=http_client,
+         )
+         has_model_pricing = isinstance(row, dict) and (
+             ("input_per_1m" in row and "output_per_1m" in row)
+@@ -300,6 +321,57 @@
+         usage = enrich_usage_with_cost(usage, model=self.model, table=self.pricing)
+         return text, usage
+
++    async def generate_with_tools(
++        self,
++        *,
++        user_prompt: str,
++        tools: list[dict[str, Any]],
++        messages: list[dict[str, Any]] | None = None,
++        system_prompt: str = "",
++        **create_kwargs: Any,
++    ) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
++        """Run one OpenAI-compatible tool-call turn.
++
++        The normal ``generate`` path deliberately returns text only because
++        Skill-MAS planning does not use tools. Native benchmark execution
++        needs the raw function calls, so this small opt-in method exposes them
++        without changing the existing planner/text API.
++        """
++        msg_list = list(messages or [])
++        if not msg_list:
++            if system_prompt:
++                msg_list.append({"role": "system", "content": system_prompt})
++            msg_list.append({"role": "user", "content": user_prompt})
++        kwargs: dict[str, Any] = {
++            "model": self.model,
++            "messages": msg_list,
++            "tools": tools,
++            "tool_choice": create_kwargs.pop("tool_choice", "auto"),
++            "temperature": self.temperature,
++            "max_tokens": self.max_tokens,
++            **({"reasoning_effort": self.reasoning_effort} if self.reasoning_effort else {}),
++            **create_kwargs,
++        }
++        merged_extra: dict[str, Any] = dict(self.extra_body or {})
++        call_extra = kwargs.pop("extra_body", None)
++        if isinstance(call_extra, dict):
++            merged_extra.update(call_extra)
++        if merged_extra:
++            kwargs["extra_body"] = merged_extra
++        response = await self.client.chat.completions.create(**kwargs)
++        msg = response.choices[0].message
++        text = structured_json_candidate_text(msg)
++        calls: list[dict[str, Any]] = []
++        for call in list(getattr(msg, "tool_calls", None) or []):
++            fn = getattr(call, "function", None)
++            calls.append({
++                "id": str(getattr(call, "id", "")),
++                "name": str(getattr(fn, "name", "")),
++                "arguments": str(getattr(fn, "arguments", "{}")),
++            })
++        usage = enrich_usage_with_cost(_usage_dict_from_chat_completion(response), model=self.model, table=self.pricing)
++        return text, calls, usage
++
+     async def aclose(self) -> None:
+         closer = getattr(self.client, "close", None)
+         if closer is None:
+@@ -307,4 +379,3 @@
+         res = closer()
+         if hasattr(res, "__await__"):
+             await res  # type: ignore[misc]
+-

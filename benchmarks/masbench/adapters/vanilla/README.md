@@ -22,6 +22,8 @@ benchmarks/masbench/adapters/vanilla/
 
 ## 依赖
 
+Python 3.10+ 即可；Vanilla 和 ReAct 的模型客户端使用 Python 标准库，无需额外 `pip install`。Reasoning 评分会导入外部 `MASBench-main/Reasoning/` 中的官方指标代码，三个任务都需要按 [`benchmarks/masbench/README.md`](../../README.md) 准备数据。API 配置使用仓库根目录的 `.env`。
+
 评分函数**复用** `../react/` 里的三个 runner（`run_reasoning.py` / `run_scheduling.py` / `run_game.py`），以保证 Vanilla 和 ReAct 用同一套评分口径：
 
 - `run_reasoning.py` 的 `_fmt_evidence`、`cal_f1_score`（官方）

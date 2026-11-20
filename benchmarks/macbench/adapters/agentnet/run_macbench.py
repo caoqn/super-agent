@@ -1,6 +1,6 @@
 """Run AgentNet on MAC-Bench and record PS / RR, tokens, cost and time.
 
-Prerequisites (see README_BENCH.md): Python 3.11+, `pip install -e '../../MAC_Bench-1.0[modal,agents]'`,
+Prerequisites (see this adapter's README): Python 3.11+, install `MAC_BENCH_ROOT` with `[modal,agents]`,
 `modal token new`, task data downloaded with `mac-bench data download`, and in .env:
 MAC_BENCH_LLM_BASE_URL / MAC_BENCH_LLM_API_KEY / MAC_BENCH_LLM_MODEL (+ LLM_PRICE_* for cost).
 

@@ -1,0 +1,7 @@
+-r ../../../../methods/skill_mas/requirements.txt
+numpy
+scipy
+PuLP
+colorama
+requests
+tiktoken

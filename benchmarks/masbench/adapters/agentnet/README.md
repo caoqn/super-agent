@@ -37,9 +37,17 @@ benchmarks/masbench/adapters/agentnet/
 1. **依赖**（Python 3.10+）：
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install requests openai pydantic PyYAML python-dotenv
+python3 -m venv .venv-agentnet-masbench && source .venv-agentnet-masbench/bin/activate
+python -m pip install -r benchmarks/masbench/adapters/agentnet/requirements.txt
 ```
+
+依赖文件只列这三个 MASBench runner 实际使用的 Python 包。若使用内置 Gemini 客户端，再安装可选依赖：
+
+```bash
+python -m pip install -r benchmarks/masbench/adapters/agentnet/requirements-gemini.txt
+```
+
+MASBench 源码和任务数据需按仓库根目录说明另行获取；不需要克隆完整 AgentNet 仓库才能运行这里的适配器。
 
 2. **配置 `.env`**（仓库根目录，或本包根目录）：
 

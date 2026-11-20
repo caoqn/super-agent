@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/rzchen777-wq/MAC_Bench",
+  "revision": "c70d962ee8e428a6d9bae42af8d92e086581ee0d",
+  "files": {
+    "baseline_protocol": "configs/evaluation/baseline_protocol.yaml",
+    "paper_task_budgets": "configs/evaluation/task_budgets.json",
+    "react_method_spec": "configs/baselines/react_single.yaml",
+    "aorchestra_method_spec": "configs/baselines/aorchestra.yaml"
+  },
+  "note": "The benchmark configs and task budget table in this repository are copied from this pinned MAC-Bench revision. AOrchestra protocol_ref is adjusted to the local tracked protocol file."
+}

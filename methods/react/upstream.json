@@ -1,0 +1,7 @@
+{
+  "benchmark_adapter_repository": "https://github.com/rzchen777-wq/MAC_Bench",
+  "revision": "c70d962ee8e428a6d9bae42af8d92e086581ee0d",
+  "implementation_path": "src/mac_bench/baselines/react_single/",
+  "method": "react_single",
+  "note": "ReAct implementation and MAC-Bench task integration are supplied by the pinned external MAC-Bench checkout; this repository stores only the run configuration and launcher."
+}

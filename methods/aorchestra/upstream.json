@@ -1,0 +1,9 @@
+{
+  "benchmark_adapter_repository": "https://github.com/rzchen777-wq/MAC_Bench",
+  "benchmark_adapter_revision": "c70d962ee8e428a6d9bae42af8d92e086581ee0d",
+  "implementation_path": "src/mac_bench/baselines/aorchestra/",
+  "method_repository": "https://github.com/FoundationAgents/AOrchestra",
+  "method_revision": "14a1a2051d6b03c479b706f8f555a60b8419e3b5",
+  "method_checkout": ".cache/baselines/AOrchestra",
+  "note": "MAC-Bench supplies the benchmark integration; the AOrchestra method source is fetched separately at the pinned revision."
+}

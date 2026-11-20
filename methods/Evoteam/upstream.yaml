@@ -7,4 +7,5 @@ notes: >-
   The inspected public main is the mixed-benchmark implementation and is not
   compatible with these historical individual-benchmark adapters. No public
   compatible revision has been verified. Use the original experiment checkout,
-  including its tools and named agent pools. No method source or pools are vendored.
+  including its tools. Initial pools are versioned in this evaluation repository;
+  frozen test pools must be supplied externally. No method source is vendored.

@@ -1,0 +1,71 @@
+{
+  "description": "Initial pool snapshots only; no frozen test pools or evolved artifacts.",
+  "pools": {
+    "gaia": {
+      "source_pool": "pool_GAIA_pool",
+      "path": "methods/Evoteam/gaia/pools/initial",
+      "files_sha256": {
+        "answer_agent/config.yaml": "6723376c8b89da92f58baaed055fbec3085a6f21f54933fdfd7e492c21fb6032",
+        "answer_agent/prompt.md": "a1e8675b6599f2c9b64c1b35be3138cc1daf1ef8bf46051ee01e61f66ee4d32c",
+        "coding_agent/config.yaml": "6d423b5dc779b98115b428c0c96bf5d1c99dd6bb740c0267435cfea40033f130",
+        "coding_agent/prompt.md": "03889de6e0be252b1308a489d1d9a46a2431d6066a9d0bf863e5fbcd7055abbd",
+        "constitution.md": "0937e7efa4defa4deb8a6d986fea64b3e6eeb10831379dce17b904277736b0ec",
+        "file_agent/config.yaml": "213e1c6af5d7d1a991848f7c245b9c377afac87e151954d37e83fe04b42d1a66",
+        "file_agent/prompt.md": "4f36390643243d6fcb81f8978726605cd2e8966b936e4ef2c13056734a1c9aa6",
+        "plan_agent/config.yaml": "f21f6292a6024e9b52d0d9571599d9fbee2814d73a5dea14116ecbe9e2225469",
+        "plan_agent/prompt.md": "3c3ad972ba802f2f94bae8b66ca60de7d91032bd9ae1a7fc8f23d6de6577bf46",
+        "pool.yaml": "9d3faa055166063c4135aa03fc6d2c5ad0952e558dcb3ee009f197843387b797",
+        "reading_agent/config.yaml": "ebf85c8e0c85aac26f997d2dc5e62789d6aeb7fef3809112503ff1e3cfdb0af0",
+        "reading_agent/prompt.md": "7b85a408d26745c7b81e92e2a2ac1c1d23142949c29d23e990fef7acb6a3f19e",
+        "science_agent/config.yaml": "c9b8dfe9e3bea8eddcc8ffef0495f4403e8ee6f9cd6e9d8f153c9ee41d00d666",
+        "science_agent/prompt.md": "5c7327733e122481f69373646eb3cc1c54c34f7e5dd841da49fc88ab11fe7566",
+        "verification_agent/config.yaml": "caeb50bcb3c41b9fddfbb779884799c029beb48bf035e8fd3ce2671d4cc577cc",
+        "verification_agent/prompt.md": "7fef686e6864e71ca35c873231236b57ad3379f91f9c02b6d677f203e234c12a",
+        "web_agent/config.yaml": "bc479a92e7aacfe7f3ac51a0603bdeb166d4fa7368373385ab16d4beed89cf90",
+        "web_agent/prompt.md": "9d34e1ff2b9dce966deeb9d2250f74028d4842c819a8f2de9fde7e0f33773be7"
+      }
+    },
+    "macbench": {
+      "source_pool": "pool_MACBENCH_OURS_INITIAL",
+      "path": "methods/Evoteam/macbench/pools/initial",
+      "files_sha256": {
+        "chairman/config.yaml": "4cc7e1baad919a795f4b7a6769e44ddb6aee56bd1f1f75c253aa886eb4b14143",
+        "chairman/prompt.md": "639471e1c87dd0ac75efe738453bef626d66974c2d5707b7f638337847295549",
+        "constitution.md": "e274ed46cb8c6335bc562e6460c10f6e16a730523d150cef9e67f528cbea764e",
+        "constraint_solver/config.yaml": "abb935eec76588873eae3bb1178978a0fa24d0003b88f9ea579f382ddcb0a041",
+        "constraint_solver/prompt.md": "55ae56398236bbe7b6212f214751b21f6fbbfc2a6dd0bdfabf0393945a468dd0",
+        "evidence_reconciler/config.yaml": "6a0d656b0548f7a35aadf88f05f56a6c7c4bf53e2b5ea4daae6e0e5b3c69f2bf",
+        "evidence_reconciler/prompt.md": "856a0b846206a19a562a923de2139624cf43cfb792cc4d97cb1c89754e4cc525",
+        "pool.yaml": "1023b2fba3a706ace780112323a2dcac5cd6407dc124fec7fa532710a708a989",
+        "software_builder/config.yaml": "6718f0ba66cc970200ee8b361f6f109e9eae79c752297a1bdec6c69eb7dbf4bf",
+        "software_builder/prompt.md": "1c1b1a25a6fbccbac3c8dce888deb549166660e892f544f9f498a407600f4f49",
+        "state_operator/config.yaml": "da02c81abbda9f2566c192c2282bebacfd538c8eabcf23d2215589ef74401255",
+        "state_operator/prompt.md": "608aa307532cf399afcae68aba99005585921d7125e235029b493485d870d0f1",
+        "verifier/config.yaml": "1a4c793f4c7d469df228467fd08335a9eb6fc8bb35643e2fbe53f2767ac51ac2",
+        "verifier/prompt.md": "21af0ecc3e4c0c0c20e309acd6f5d94b09a33f65ba706b6d29734fbbe9e57dbd"
+      }
+    },
+    "masbench": {
+      "source_pool": "pool_MASBENCH_DYNAMIC_6",
+      "path": "methods/Evoteam/masbench/pools/initial",
+      "files_sha256": {
+        "answer_agent/config.yaml": "255b5c64f6d9facf7347542807937ccedd1c9e63abcd915d70f627291f940011",
+        "answer_agent/prompt.md": "4f2d17d49ee1990e55da016f04141317587ebf04a6672b517a9a568899796f94",
+        "constitution.md": "f98a238b09200d9e680386b4df0ba54316aa7be0f1094abd4d11d50b68c40ba2",
+        "evidence_agent/config.yaml": "dd52ff1aee38acacd02d41fe93074bf319ea9df1c265189db364acef04893030",
+        "evidence_agent/prompt.md": "281a5229c12cef811ae58a391e902baeeac2b8e8a215a171df0696ef04ad428f",
+        "game_agent/config.yaml": "af7183b12c589a73cc6c212602c716659f6b3700ed5a6b0e7b4bf50e8642089b",
+        "game_agent/prompt.md": "51e3449a97e492c73db34156027eaa91fda5a27e4395280b578d68454318b983",
+        "integrator/config.yaml": "f96fe3590f76649418569e53c40dfef83ab7ab16fc0b8f72e2fa226c5ea885f3",
+        "integrator/prompt.md": "f323267ef6e99247c8932c69c41d20c2574acfe0d3b0ccb595175ee1e4c4ff44",
+        "planner/config.yaml": "c15fe09eb17c58545b4db47a96999d1f34070fa465fdfef72e602ebdcccfbdc3",
+        "planner/prompt.md": "bd00b9a7aa891f9092bcecd88eae47f477aac7c125ac3ddb6449de2508de5f3e",
+        "pool.yaml": "57e4bc9b267b42afaab53a4b2dd9b14ce4f42ee6683b8af2d2c26d4eb18fba91",
+        "schedule_agent/config.yaml": "dbacc352e2e3a0bf6a6c3435fb2c2459347b49e7cd35c44b99e52f6d99ead345",
+        "schedule_agent/prompt.md": "8b34966515b817c4ab4deeb0ee982d8421aa12611fc9046ee2d2b9566351934f",
+        "verifier/config.yaml": "e41b6956381fb4052e67695cf60c5daa40603545b92ec4fb0f3c8a426e7051e9",
+        "verifier/prompt.md": "a5035b322181f6a905e240cabd720d84739a703306dfa79c209a77f6a5854853"
+      }
+    }
+  }
+}

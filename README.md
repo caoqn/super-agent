@@ -59,4 +59,4 @@ The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<b
 
 ## Evoteam
 
-Evoteam 的 GAIA、MAC-Bench 和 MASBench 适配器、实验配置及外部源码接入说明见 [methods/Evoteam/README.md](methods/Evoteam/README.md)。方法源码引用 [caoqn/EvoTeam](https://github.com/caoqn/EvoTeam)，不包含方法本体或提示词池；先按说明设置兼容版本的 `EVOTEAM_ROOT`。安装适配器依赖：`pip install -r requirements/base.txt`；从仓库根目录运行 `python scripts/run.py --config configs/Evoteam_macbench.json --dry-run --max-items 1`（需先准备外部数据）。
+Evoteam 的 GAIA、MAC-Bench 和 MASBench 适配器、实验配置及外部源码接入说明见 [methods/Evoteam/README.md](methods/Evoteam/README.md)。方法源码引用 [caoqn/EvoTeam](https://github.com/caoqn/EvoTeam)，不包含方法本体；保留三个数据集的初始 agent 池，不包含冻结测试池；先按说明设置兼容版本的 `EVOTEAM_ROOT`。安装适配器依赖：`pip install -r requirements/base.txt`；从仓库根目录运行 `python scripts/run.py --config configs/Evoteam_macbench.json --dry-run --max-items 1`（需先准备外部数据）。

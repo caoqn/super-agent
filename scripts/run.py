@@ -17,6 +17,14 @@ if benchmark not in {"gaia", "macbench", "masbench"}:
 env = os.environ.copy()
 # Config supplies defaults; the external method may load env-file overrides.
 env.update({str(k): str(v) for k,v in config.get("env", {}).items()})
+pool_args = []
+if config.get("pool"):
+    pool = Path(config["pool"]).expanduser()
+    if not pool.is_absolute():
+        pool = ROOT / pool
+    if not (pool / "pool.yaml").is_file():
+        p.error(f"Pool config not found: {pool / 'pool.yaml'}")
+    pool_args = ["--team", str(pool.resolve())]
 command = [sys.executable, str(ROOT / "methods/Evoteam" / benchmark / "run.py"),
-           *config.get("args", []), *extra]
+           *config.get("args", []), *pool_args, *extra]
 raise SystemExit(subprocess.call(command, env=env, cwd=ROOT))

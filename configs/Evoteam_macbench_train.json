@@ -1,0 +1,17 @@
+{
+  "benchmark": "macbench",
+  "env": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat",
+    "META_TEAM_MAX_STEPS": "unlimited"
+  },
+  "args": [
+    "--split",
+    "dev",
+    "--workers",
+    "1",
+    "--evolve"
+  ],
+  "pool": "methods/Evoteam/macbench/pools/initial"
+}

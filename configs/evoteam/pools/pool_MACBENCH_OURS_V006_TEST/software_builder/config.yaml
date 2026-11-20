@@ -1,0 +1,9 @@
+name: software_builder
+role: software_builder
+description: "Implements assigned software changes in the MAC-Bench task workspace and validates them with available public tools."
+model: deepseek-chat
+temperature: 0.2
+max_tokens: 16384
+max_steps: 45
+tools:
+  - macbench

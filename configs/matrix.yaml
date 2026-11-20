@@ -1,5 +1,6 @@
 # Method to currently released benchmark adapters.
 methods:
+  evoteam: [gaia, macbench, masbench] # Adapter preserved; execution status in methods/evoteam/README.md
   agentnet: [gaia, macbench, masbench]
   aorchestra: [masbench]
   react: [masbench]

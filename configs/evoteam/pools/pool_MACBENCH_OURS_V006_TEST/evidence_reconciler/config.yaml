@@ -1,0 +1,9 @@
+name: evidence_reconciler
+role: evidence_reconciler
+description: "Reconciles task-world records and documents, traces identities and references, and reports conflicts with source evidence; read-only."
+model: deepseek-chat
+temperature: 0.2
+max_tokens: 12288
+max_steps: 35
+tools:
+  - macbench

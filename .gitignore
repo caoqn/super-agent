@@ -105,3 +105,4 @@ runs/
 # Local benchmark data and generated artifacts
 /benchmarks/*/data/
 /.artifacts/
+/data/evoteam/

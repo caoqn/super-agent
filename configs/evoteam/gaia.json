@@ -1,0 +1,19 @@
+{
+  "benchmark": "gaia",
+  "args": [
+    "--team",
+    "pool_GAIA_pool_chairman_profile_change_r1_v020_test",
+    "--split",
+    "test_100",
+    "--workers",
+    "1"
+  ],
+  "status": "blocked_upstream_compatibility",
+  "provenance": "Imported example settings; paper-run settings have not been verified.",
+  "env_original": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat"
+  },
+  "env_note": "Original uploaded environment names, retained for provenance only. Not applied by the data/check runner; official EvoTeam uses EVOTEAM_MODEL and does not read META_TEAM_MODEL."
+}

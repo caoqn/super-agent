@@ -1,11 +1,12 @@
 repository: https://github.com/caoqn/EvoTeam
+branch: individual-benchmark-v1
+revision: 7c155192655d5092e36ba8928aa6c8522ce57336
 source_env: EVOTEAM_ROOT
-revision: null
-inspected_revision: a4b6920d02dd29c682e0b2bc4359c72c57ee0995
-compatibility: historical-individual-benchmark-api
+compatibility: individual-benchmark-v1
+lock_file: methods/Evoteam/source-lock.json
+setup: python scripts/setup_evoteam.py
 notes: >-
-  The inspected public main is the mixed-benchmark implementation and is not
-  compatible with these historical individual-benchmark adapters. No public
-  compatible revision has been verified. Use the original experiment checkout,
-  including its tools. Initial pools are versioned in this evaluation repository;
-  frozen test pools must be supplied externally. No method source is vendored.
+  The pinned public source provides the individual-benchmark adapter, budget,
+  tool, selection and evolution interfaces. Public main remains the mixed-benchmark
+  implementation. Initial pools are versioned here; method source and frozen pools
+  are not vendored. Offline lifecycle tests cover all three initial pools.

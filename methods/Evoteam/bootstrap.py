@@ -1,5 +1,7 @@
 """Connect benchmark adapters to an external, experiment-compatible EvoTeam checkout."""
 import importlib
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -9,9 +11,9 @@ SOURCE_URL = "https://github.com/caoqn/EvoTeam"
 
 
 def source_root():
-    value = os.environ.get("EVOTEAM_ROOT", "").strip()
-    if not value:
-        raise RuntimeError(f"Set EVOTEAM_ROOT to an experiment-compatible source checkout; see {SOURCE_URL} and methods/Evoteam/README.md")
+    value = os.environ.get("EVOTEAM_ROOT", "").strip() or str(REPO_ROOT / "external/EvoTeam")
+    if not Path(value).expanduser().exists():
+        raise RuntimeError(f"Run python scripts/setup_evoteam.py or set EVOTEAM_ROOT to the pinned source checkout; see {SOURCE_URL} and methods/Evoteam/README.md")
     root = Path(value).expanduser().resolve()
     required = ("benchmarks/adapter.py", "core/runner.py", "core/task_budget.py",
                 "core/team_selector.py", "main.py", "tools/macbench.py")
@@ -19,11 +21,17 @@ def source_root():
     if missing:
         raise RuntimeError("Incompatible EvoTeam source checkout: missing " + ", ".join(missing)
                            + ". These adapters require the historical individual-benchmark experiment API; see methods/Evoteam/upstream.yaml.")
+    lock = json.loads((REPO_ROOT / "methods/Evoteam/source-lock.json").read_text())
+    for name, expected in lock["files"].items():
+        path = root / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise RuntimeError(f"Incompatible EvoTeam source: {name} differs from pinned {lock['revision']}. Run scripts/setup_evoteam.py into a fresh directory.")
     return root
 
 
 def configure_source():
     root = source_root()
+    os.environ.setdefault("EVAL_RESULTS_DIR", str(REPO_ROOT / "results/Evoteam"))
     # Keep shared benchmark data/scorers in this evaluation repository.
     sys.path.insert(0, str(REPO_ROOT))
     benchmarks = importlib.import_module("benchmarks")

@@ -1,50 +1,57 @@
-# Evoteam 评测适配器
+# EvoTeam 评测适配器
 
-方法源码：[caoqn/EvoTeam](https://github.com/caoqn/EvoTeam)。本目录只保留 GAIA、MAC-Bench、MASBench 的适配器、启动入口和外部源码连接代码；方法核心和工具库在外部源码中维护；本仓库另外保存三个数据集的初始 agent 池（角色配置、提示词和初始协作规则），不保存冻结测试池或演化产物。实验配置位于 `configs/Evoteam_{gaia,macbench,masbench}.json`。
+方法源码：[caoqn/EvoTeam 的 individual-benchmark-v1 分支](https://github.com/caoqn/EvoTeam/tree/individual-benchmark-v1)。此分支提供三个适配器使用的单数据集实验接口；源码仓库的 `main` 保持混合数据集实现。本评测仓库只保存适配器、实验配置、初始池和源码版本锁，不包含方法本体、冻结池或演化产物。
 
-## 源码版本与安装
+## 安装固定源码版本
 
-这些适配器对应原来的单数据集实验接口。已检查的公开源码提交 `a4b6920d02dd29c682e0b2bc4359c72c57ee0995` 是混合评测版本，缺少本实验所需的 `core/task_budget.py` 等接口，**不能直接用于复现本次实验**。目前没有确认过可用的公开提交，因此 `upstream.yaml` 的 `revision` 留空，不能将公开 `main` 视为已验证版本。
-
-设置 `EVOTEAM_ROOT` 指向原实验的兼容源码目录，其中需要包含 `core/`、`benchmarks/adapter.py`、`main.py`、`tools/` 。启动时会检查必需接口，缺失时明确报错，不静默切换方法版本。
-
-建议 Python 3.11，从评测仓库根目录执行：
+使用 Python 3.11，在本评测仓库根目录执行：
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements/base.txt
-# 将兼容源码放到 external/EvoTeam，或将此变量设为现有源码目录。
-export EVOTEAM_ROOT="$PWD/external/EvoTeam"
+python scripts/setup_evoteam.py
 cp .env.example .env
-# 填写 DEV_API_BASE、DEV_API_KEY，并按实际位置填写 EVOTEAM_ROOT。
+# 编辑 .env 中的 DEV_API_BASE / DEV_API_KEY。
 export META_TEAM_ENV_FILE="$PWD/.env"
 ```
 
-`EVOTEAM_ROOT` 必须导出到进程环境；仅写入 `.env` 不会自动被连接代码读取。外部源码的附加依赖和工具需按其说明安装。`META_TEAM_ENV_FILE` 由历史方法运行时加载，文件中的同名模型变量可能覆盖 JSON 配置，运行前应核对。
+安装器从公开 GitHub 下载 `source-lock.json` 指定的确切提交，校验每个源码文件的 SHA-256，并安装运行依赖；不需要 GitHub 登录。默认放入被 Git 忽略的 `external/EvoTeam/`。可加 `--no-install` 只下载，或 `--destination` 指定位置。非默认位置需在 shell 中导出 `EVOTEAM_ROOT`，仅写入 `.env` 不会改变源码解析路径。已有目录不覆盖；不兼容或被修改的源码会明确报错。
 
-## 数据及实验配置
+模型默认为 `deepseek-chat`，三个训练配置均为 `workers=1`、开启 `--evolve`。显式 `META_TEAM_ENV_FILE` 中的模型变量可能覆盖配置默认值，请核对 `.env` 中的 `META_TEAM_MODEL`、`TEAM_SELECTOR_MODEL` 和 `TEAM_REFLECTION_MODEL`。数据路径需通过 shell `export` 设置。
 
-- GAIA：设置 `GAIA_DATA_DIR`，目录包含原实验的 `level_{1,2,3}_{train_20,test_100}.json` 和 `val_files/`。配置使用 `pool_GAIA_pool_chairman_profile_change_r1_v020_test`、`test_100`。
-- MAC-Bench：设置 `MAC_BENCH_ROOT`，包含 `data/`、`src/mac_bench/`、`configs/evaluation/task_budgets.json`；安装 `pip install -e "$MAC_BENCH_ROOT[meta_team]"`。配置使用 `pool_MACBENCH_OURS_V006_TEST`、`test`，关闭 agent 步数限制，保留数据集预算。
-- MASBench：设置 `MASBENCH_ROOT`，执行 `python scripts/prepare_masbench.py --source "$MASBENCH_ROOT"` 生成固定 train 18 / test 90 划分。Game 还需设置可写的 `MASBENCH_SUPPORT_ROOT`，执行 `python -m pip install --target "$MASBENCH_SUPPORT_ROOT/.masbench_deps" -r requirements/masbench-game.txt`。配置使用 `pool_MASBENCH_DYNAMIC_6`、`test`。
+## 准备数据
 
-初始池位于 `methods/Evoteam/{gaia,macbench,masbench}/pools/initial/`。来源池名和每个文件的 SHA-256 记录在 `initial_pools.json`。新增的 `configs/Evoteam_*_train.json` 分别使用 GAIA `train_20`、MAC-Bench `dev`、MASBench `train`，均开启 `--evolve`；启动器会将配置的仓库相对池路径解析为绝对路径再传入外部方法，不需要将池安装到源码目录。
+数据及参考答案不随代码发布，需自行获取对应上游数据的使用权限。
 
-原 `configs/Evoteam_{gaia,macbench,masbench}.json` 保留测试参数，其中引用的冻结池不随仓库提供，需自行放入 `$EVOTEAM_ROOT/agents/` 或用 `--team` 指定外部完整池路径。不要用初始池替代冻结池并声称复现相同测试成绩。
-
-三个配置均使用 `deepseek-chat`，`workers=1`。MAC-Bench 预算从上游文件读取；token 预算和紧急提交需要兼容的外部方法实现，不能仅凭适配器加载成功认定已生效。
-
-## 运行
+**GAIA**：获取 [官方 GAIA](https://huggingface.co/datasets/gaia-benchmark/GAIA) 的 `2023/validation/`（`metadata.jsonl` 和附件），再执行：
 
 ```bash
-python scripts/run.py --config configs/Evoteam_gaia.json --dry-run --cases 0
-python scripts/run.py --config configs/Evoteam_macbench.json --dry-run --max-items 1
-python scripts/run.py --config configs/Evoteam_masbench.json --dry-run --max-items 1
-python scripts/run.py --config configs/Evoteam_macbench.json --cases 0
+python scripts/prepare_evoteam_gaia.py --source "$GAIA_VALIDATION_DIR"
 ```
 
-从初始池开始训练：
+此脚本依据 `methods/Evoteam/gaia/splits.json` 中的固定任务 ID 重建 20 题训练集及 100 题测试集。默认输出 `data/gaia`；使用其他位置时导出 `GAIA_DATA_DIR`，其中需包含 `level_{1,2,3}_{train_20,test_100}.json` 和 `val_files/`。不改变其他方法的 GAIA 划分。
+
+**MAC-Bench**：获取包含 `data/`、`src/mac_bench/`、`configs/evaluation/task_budgets.json` 的 [MAC-Bench](https://github.com/rzchen777-wq/MAC_Bench) 源码及数据，并设置：
+
+```bash
+export MAC_BENCH_ROOT="$PWD/external/MAC_Bench"
+python -m pip install -e "${MAC_BENCH_ROOT}[meta_team]"
+```
+
+训练使用 `dev`，测试使用 `test`。保留上游任务的 token、工具调用和时间预算以及主席紧急提交；agent 步数上限关闭。原生工具环境还须满足 MAC-Bench 官方说明（例如对应任务的外部命令）。
+
+**MASBench**：获取 [官方 MASBench](https://github.com/BUPT-GAMMA/MASBench)，包含 Reasoning、Scheduling、Game 数据：
+
+```bash
+export MASBENCH_ROOT="$PWD/external/MASBench"
+python scripts/prepare_masbench.py --source "$MASBENCH_ROOT"
+export MASBENCH_SUPPORT_ROOT="$PWD/external/masbench-support"
+python -m pip install --target "$MASBENCH_SUPPORT_ROOT/.masbench_deps" -r requirements/masbench-game.txt
+```
+
+固定训练 18 题、测试 90 题。自定义划分输出位置需导出 `MASBENCH_SPLIT_DIR`。Game 子进程使用独立支持目录及依赖。
+
+## 从初始池训练
 
 ```bash
 python scripts/run.py --config configs/Evoteam_gaia_train.json
@@ -52,13 +59,18 @@ python scripts/run.py --config configs/Evoteam_macbench_train.json
 python scripts/run.py --config configs/Evoteam_masbench_train.json
 ```
 
-先加 `--dry-run --max-items 1` 检查选题（GAIA 使用 `--cases 0`）。后附 CLI 参数覆盖配置默认值，包括 `--team`。外部运行时将初始池复制到 run 版本目录后演化；仓库内初始快照保持不变。测试不加 `--evolve`。输出、断点和池的持久化由外部方法运行时管理；原实验接口默认写入源码目录的 `runs/`、`sessions/` 和基准结果目录。
+启动前可追加 `--dry-run --max-items 1`，检查数据选择且不调用模型。追加 CLI 参数覆盖默认参数，例如 `--run-id my_mac_train` 或 `--cases 0`。初始池位于 `methods/Evoteam/{gaia,macbench,masbench}/pools/initial`；来源及文件校验和见 `initial_pools.json`。
 
-## 检查
+训练复制初始池到运行目录的 `team/v000`，再保存演化版本；后续题目使用最新版本，初始快照不会被修改。默认输出 `results/Evoteam/`，可导出 `EVAL_RESULTS_DIR` 重定向。通过 `--run-id <已有运行名> --resume` 续跑；具体参数可用对应入口的 `--help` 查看。
+
+`configs/Evoteam_{gaia,macbench,masbench}.json` 保留原实验测试参数，引用的冻结池不提供。训练后用 `--team <训练产出的完整池目录>` 指定测试池。测试不加 `--evolve`；未经对应训练的初始池不能视为原实验冻结池。
+
+## 验证范围
 
 ```bash
-pip install -r requirements/dev.txt
-python -m pytest -q
+python -m pip install -r requirements/dev.txt
+python -m pytest -q tests/test_evoteam_source.py tests/test_evoteam_training.py tests/test_evoteam_budget.py
+python -m pytest -q external/EvoTeam/tests
 ```
 
-未设置 `EVOTEAM_ROOT` 时不收集外部方法集成测试；设置后仍需相应数据集，否则数据测试跳过。离线测试和 `--dry-run` 不调用模型，不等于完整评测复现。
+三套初始池的离线训练测试使用真实选队、协作运行、反思与版本保存逻辑，替换模型回答和评测环境，验证第一题生成版本、第二题复用、初始池不变。预算回归覆盖 token 超限和紧急提交。源码已安装时自动启用集成测试；真实数据测试还需设置上述数据环境。离线测试不调用付费模型，也不代表完整基准得分复现。

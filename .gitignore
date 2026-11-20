@@ -115,3 +115,7 @@ runs/
 external/
 results/**
 !results/README.md
+
+# Locally prepared EvoTeam task inputs
+/data/gaia/
+/data/masbench_split18_test90/

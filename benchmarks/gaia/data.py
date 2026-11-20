@@ -37,8 +37,8 @@ def load_gaia_data(
         if not data_file.exists():
             raise FileNotFoundError(
                 f"GAIA data file not found: {data_file}\n"
-                f"Ensure data/gaia/ directory is complete.\n"
-                f"Split files (train_20/test_100) should be pre-included in the repository."
+                "Provision the official GAIA inputs, then run scripts/prepare_evoteam_gaia.py "
+                "or set GAIA_DATA_DIR to your prepared split directory."
             )
 
         with open(data_file, "r", encoding="utf-8") as f:

@@ -1,5 +1,5 @@
-# ReAct method core
+# ReAct method
 
-`methods/react/react.py` implements the reusable Thought/Action/Observation loop and action parser. `methods/react/llm.py` provides the OpenAI-compatible model client used by the released ReAct baseline.
+For MAC-Bench, the implementation and benchmark integration are supplied by the pinned external [MAC-Bench repository](https://github.com/rzchen777-wq/MAC_Bench), under `src/mac_bench/baselines/react_single/`. See [`upstream.json`](upstream.json), the MAC-Bench method configuration at [`configs/react/macbench.yaml`](../../configs/react/macbench.yaml), and the [MAC-Bench launcher](../../benchmarks/macbench/adapters/react/README.md).
 
-The MASBench-specific tools, prompts, data loading, and evaluation runners live in `benchmarks/masbench/adapters/react/`.
+This repository does not add or copy the MAC-Bench ReAct implementation. Existing ReAct files under this directory are retained for the separate MASBench integration; they are not used by the MAC-Bench runner.

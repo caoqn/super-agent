@@ -1,7 +1,7 @@
 # Method to currently released benchmark adapters.
 methods:
   agentnet: [gaia, macbench, masbench]
-  aorchestra: [masbench]
-  react: [masbench]
+  aorchestra: [macbench, masbench]
+  react: [macbench, masbench]
   vanilla: [masbench]
   super_agent: [gaia, macbench, masbench]

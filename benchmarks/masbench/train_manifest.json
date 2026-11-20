@@ -1,0 +1,36 @@
+{
+  "seed": 42,
+  "reasoning": {
+    "n": 6,
+    "ids": [
+      "sample_193_4627ec54",
+      "sample_56_5fc8028e",
+      "sample_139_5e25f944",
+      "sample_61_5fb18eb2",
+      "sample_146_eca87124",
+      "sample_278_79ddf47b"
+    ]
+  },
+  "scheduling": {
+    "n": 6,
+    "ids": [
+      "2_5",
+      "3_34",
+      "3_60",
+      "4_60",
+      "4_36",
+      "5_22"
+    ]
+  },
+  "game": {
+    "n": 6,
+    "ids": [
+      "15x15_v35.json",
+      "15x15_v47.json",
+      "15x15_v6.json",
+      "18x18_v38.json",
+      "18x18_v36.json",
+      "18x18_v5.json"
+    ]
+  }
+}

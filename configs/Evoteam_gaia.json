@@ -1,0 +1,16 @@
+{
+  "benchmark": "gaia",
+  "env": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat"
+  },
+  "args": [
+    "--team",
+    "pool_GAIA_pool_chairman_profile_change_r1_v020_test",
+    "--split",
+    "test_100",
+    "--workers",
+    "1"
+  ]
+}

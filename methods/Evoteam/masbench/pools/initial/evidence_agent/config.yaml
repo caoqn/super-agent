@@ -1,0 +1,8 @@
+name: evidence_agent
+role: worker
+description: "Reads only the assigned native actor's private evidence or calendar and reports precise, source-bound facts."
+model: gpt-5.6-luna
+temperature: 0.2
+max_tokens: 32768
+max_steps: 100
+tools: []

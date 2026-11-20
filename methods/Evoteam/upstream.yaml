@@ -1,0 +1,11 @@
+repository: https://github.com/caoqn/EvoTeam
+source_env: EVOTEAM_ROOT
+revision: null
+inspected_revision: a4b6920d02dd29c682e0b2bc4359c72c57ee0995
+compatibility: historical-individual-benchmark-api
+notes: >-
+  The inspected public main is the mixed-benchmark implementation and is not
+  compatible with these historical individual-benchmark adapters. No public
+  compatible revision has been verified. Use the original experiment checkout,
+  including its tools. Initial pools are versioned in this evaluation repository;
+  frozen test pools must be supplied externally. No method source is vendored.

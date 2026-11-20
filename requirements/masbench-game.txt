@@ -1,0 +1,6 @@
+# Python packages needed by the upstream MASBench Game simulator worker.
+numpy>=1.26
+scipy>=1.11
+pulp>=2.7
+colorama>=0.4.6
+openai>=1.0

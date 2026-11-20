@@ -1,0 +1,18 @@
+{
+  "benchmark": "masbench",
+  "model": "deepseek-flash",
+  "temperature": 0.2,
+  "max_output_tokens": 32768,
+  "rounds": 1,
+  "train_tasks": 18,
+  "k_trajectories": 3,
+  "test_tasks": 90,
+  "train_concurrency": 1,
+  "test_concurrency": 1,
+  "max_steps": 300,
+  "base_timeout_seconds": 7200,
+  "additional_wall_window_seconds": 800,
+  "official_token_budget_enforced": false,
+  "input_per_1m": 0.2,
+  "output_per_1m": 1.2
+}

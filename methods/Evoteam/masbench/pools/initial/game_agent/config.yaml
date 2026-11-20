@@ -1,0 +1,8 @@
+name: game_agent
+role: worker
+description: "Operates one bound Game actor through local observation, in-range messages, and synchronized native actions."
+model: gpt-5.6-luna
+temperature: 0.2
+max_tokens: 32768
+max_steps: 180
+tools: []

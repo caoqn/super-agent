@@ -1,0 +1,22 @@
+{
+  "seed": 42,
+  "train_count": 18,
+  "test_count": 90,
+  "reasoning_train_levels": {
+    "easy": 4,
+    "hard": 2
+  },
+  "reasoning_test_levels": {
+    "easy": 20,
+    "hard": 10
+  },
+  "reasoning_pool_after_excluding_test_families": 250,
+  "reasoning_excluded_rows": 50,
+  "checks": {
+    "test_payloads_match_original": true,
+    "train_test_ids_disjoint": true,
+    "reasoning_family_and_question_disjoint": true,
+    "training_reasoning_families_unique": true,
+    "calendar_and_map_content_disjoint": true
+  }
+}

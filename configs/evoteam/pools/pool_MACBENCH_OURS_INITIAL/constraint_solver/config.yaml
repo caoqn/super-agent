@@ -1,0 +1,9 @@
+name: constraint_solver
+role: constraint_solver
+description: "Translates verified task evidence into a feasible plan under eligibility, capacity, time, dependency, and other stated constraints; read-only."
+model: deepseek-chat
+temperature: 0.2
+max_tokens: 12288
+max_steps: 35
+tools:
+  - macbench

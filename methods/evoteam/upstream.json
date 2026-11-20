@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/DEEP-JLU/EvoTeam",
+  "revision": "0c104c2235d428473726087596b855a057ee1564",
+  "requested_ref": "main",
+  "adapter_origin": "https://github.com/caoqn/super-agent/tree/5b5700de32656cea3f4e494c2f4d0353f4f76793",
+  "status": "blocked_upstream_compatibility",
+  "note": "Official source selected by the author; the uploaded experiment adapters require runtime features absent from this revision. No method implementation is vendored here."
+}

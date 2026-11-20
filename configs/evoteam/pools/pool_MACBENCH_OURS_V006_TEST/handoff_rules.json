@@ -1,0 +1,912 @@
+{
+  "schema_version": 3,
+  "bindings": {
+    "family_21a22b81e3a2": "hf_family_21a22b81e3a2",
+    "family_67cdb6285abd": "hf_family_67cdb6285abd"
+  },
+  "rules": [
+    {
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "from_agent": "chairman",
+      "to_agent": "software_builder",
+      "version": 1,
+      "instruction": "Send a complete self-contained implementation brief for exactly one unit of work, structured as: (1) SCOPE — the exhaustive list of stubbed symbols to fill in and a hard write boundary naming the only files the builder may edit, plus an explicit statement that everything outside it is off-limits because a peer is editing it concurrently; (2) PRESERVE — the statement that signatures, imports, class attributes, module-level constants and docstrings are original and must be kept intact, and that the goal is behavioral parity with the pinned upstream version rather than source identity; (3) SOURCE OF TRUTH — concrete pointers to the most precise specifications available (the public test module for that unit, the provided complete frontend/wrapper that consumes these functions, and the local documentation of accepted keys and error messages), with an instruction to read them in full before coding; (4) BEHAVIOR NOTES — the key data shapes/attributes/return conventions and error-raising expectations the builder would otherwise have to guess, flagged as guidance to confirm against the tests rather than as gospel; (5) VERIFY — the exact rebuild and check commands, and the expectation to iterate until the public checks for that unit pass. Keep the brief dense but readable; state uncertainty where the brief author is unsure (e.g. \\\"check what the pinned version actually does here\\\") instead of asserting it.",
+      "trigger_description": "Delegating one bounded implementation unit of a stubbed-out library reconstruction to a builder while other agents implement neighboring modules concurrently in the same workspace.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "One-sentence statement of what to implement and in which unit."
+          },
+          "context": {
+            "type": "string",
+            "description": "State of the workspace: stubbed bodies, original declarations preserved, pinned version to reproduce."
+          },
+          "write_boundary": {
+            "type": "string",
+            "description": "Exhaustive list of files the builder may edit, plus explicit note that sibling modules/tests/docs are owned by another writer."
+          },
+          "symbols_to_implement": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Every stub/symbol in the unit that must be filled in."
+          },
+          "preserved_api": {
+            "type": "string",
+            "description": "Declarations that must remain unchanged."
+          },
+          "spec_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Authoritative references: the public test module for the unit, the complete frontend/wrapper consumer, local docs."
+          },
+          "behavior_notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Key attributes, return shapes, normalisation and error-raising expectations, marked as confirm-against-tests."
+          },
+          "verification": {
+            "type": "string",
+            "description": "Exact rebuild/check commands and pass criteria for the unit."
+          }
+        },
+        "required": [
+          "task",
+          "write_boundary",
+          "symbols_to_implement",
+          "spec_sources",
+          "verification"
+        ]
+      },
+      "required_evidence": [
+        "Exhaustive list of edit-permitted paths forming the write boundary",
+        "Enumeration of the stubbed symbols in scope",
+        "Pointer to the public test module that specifies the unit's behaviour",
+        "Pointer to the complete consumer/wrapper or local documentation covering accepted inputs and error messages",
+        "Rebuild and check commands to run after the change",
+        "The pinned upstream version whose behaviour is to be reproduced"
+      ],
+      "verification": "Builder rebuilds and runs the public checks for the unit and iterates until they pass; a follow-up verification step confirms the build artifacts behave correctly in a clean environment and that no stubs remain in the unit, and that no file outside the write boundary was modified.",
+      "fallback": "If a specification pointer is missing, incomplete, or contradicts the behavior notes, derive behavior from the public tests and the consuming/frontend code, record the ambiguity in the completion summary, and do not widen the edit scope or modify tests to make checks pass.",
+      "context_notes": "Multiple units are implemented in the same workspace concurrently, so the write boundary is the load-bearing part of this contract: without it the parallel writers corrupt each other's files. The brief's behavior notes are useful accelerants but were explicitly framed as provisional, which kept the builder anchored to the tests. Grading was behavioral (fresh-environment consumer of the artifacts, not source identity), and the task passed at full score with this brief as the only handoff in the trace, so the pattern is supported by a successful outcome rather than a retry; treat it as a starting contract to refine when a future unit's brief produces a boundary violation or a spec mismatch.",
+      "evidence_task_ids": [
+        "flit_packages"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "bounded_module_implementation_brief",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "from_agent": "evidence_reconciler",
+      "to_agent": "software_builder",
+      "version": 1,
+      "instruction": "Send the implementer a short, constraint-first note — not a narrative report. State up front that these are read-only findings from another agent, name the unit they apply to, and structure the rest as: (1) HOW TO RUN — the exact build/check invocation that works here, plus which interpreters or environments lack the usual test tooling, so the implementer does not misread a broken invocation as a code defect. (2) TRAPS — the cases where a plausible naive implementation passes casual inspection but fails the tests, each phrased as \"this input/layout must yield that outcome\"; these are the highest-value content. (3) EXACT PINNED VALUES — literal expected outputs (normalised strings, exception types, required message substrings, returned key names, file layouts) with a citation to the test case or consumer line that fixes each one. (4) ORDERING AND FALLBACK RULES — which strategy must be tried first and when to fall back to the next. (5) SCOPE CAVEAT — remind the implementer that these findings constrain behaviour, not edit scope, and that write boundaries still come from the coordinator's brief. Mark every item as read-only source evidence unless you executed it. Omit design prescriptions; hand over facts and expectations, not a solution.",
+      "trigger_description": "A read-only evidence/research agent forwards its findings straight to an implementer who is already coding the same unit, so the implementer gets environment and test-pinned constraints without waiting for the coordinator to relay them.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "description": "Statement that findings are read-only evidence from another agent, and which unit they constrain."
+          },
+          "working_check_command": {
+            "type": "string",
+            "description": "The build/check invocation that actually works, plus which environments lack the usual test tooling."
+          },
+          "trap_cases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Input or layout cases where a naive implementation silently produces the wrong observable result, with the required outcome."
+          },
+          "pinned_literals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Exact expected values: normalised strings, return-dict key names, exception types, required message substrings, produced file layouts — each with a citation."
+          },
+          "ordering_and_fallback": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Required order of detection/selection strategies and when the next strategy takes over."
+          },
+          "scope_caveat": {
+            "type": "string",
+            "description": "Note that the findings constrain behaviour only; edit scope is owned by the coordinator."
+          }
+        },
+        "required": [
+          "provenance",
+          "working_check_command",
+          "trap_cases",
+          "pinned_literals"
+        ]
+      },
+      "required_evidence": [
+        "Explicit statement of read-only provenance and the unit the findings constrain",
+        "The exact build/check command that works, plus environments where the usual test tooling is absent",
+        "Trap cases where a naive implementation gives the wrong observable result",
+        "Literal pinned values (returned key names, exception types, required message substrings, produced artefact layouts) with a citation for each",
+        "Ordered strategy/fallback expectations",
+        "Confirmation that the note constrains behaviour only and does not redefine the write boundary"
+      ],
+      "verification": "The implementer can act on the note without re-reading the sources: every pinned value traces to a citation, and after applying the findings the unit's public checks pass with the stated command. Any item that could not be executed stays labelled as read-only evidence, and the implementer confirms ambiguous items against the public tests before treating them as requirements.",
+      "fallback": "If a constraint cannot be verified, say so plainly and point to the public test or consumer code that should be checked rather than asserting a behaviour. If the evidence contradicts the implementer's current direction on a point, state the contradiction and defer to the public tests. If the unit's specification is unavailable, hand over only the working command and the verified citations, and leave the rest to the implementer — never widen the edit scope or suggest editing tests to make checks pass.",
+      "context_notes": "This direct channel worked because it was complementary to, not a replacement for, the coordinator's own brief: the coordinator fixed scope and write boundaries, while the evidence agent supplied the environment fact (the usual test runner is absent, use the project build/check script), the trap cases, and the exact literal values. Keeping the note telemetry-free and grouping by constraint type — not by file — is what made it usable during coding. Do not turn it into a design document, do not restate the coordinator's scope decisions as its own, and do not let a single contradicted item become a blanket prohibition on the surrounding approach.",
+      "evidence_task_ids": [
+        "flit_packages"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "evidence_constraints_direct_to_builder",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "from_agent": "evidence_reconciler",
+      "to_agent": "chairman",
+      "version": 1,
+      "instruction": "Deliver a status-labelled evidence report that the coordinator can act on and forward without re-deriving the facts. Structure it as: (1) STATUS — one of COMPLETE / PARTIAL / BLOCKED, stated first, plus what was inspected and what could not be verified; (2) ENVIRONMENT CONSTRAINTS — which interpreters/environments exist and which test runner actually works, with the exact invocation to use, so downstream agents do not waste cycles on a command that cannot run; (3) INVENTORY — exhaustive enumeration of the missing or stubbed symbols grouped by file, including concrete declarations that must be preserved (constant tables, default field values, exception hierarchies) so the implementer knows what is bounded work versus already-correct context; (4) PINNED CONSTRAINTS — the behavioural facts that tests or consumer code already fix, each with a citation (file and line or test case name) and a short statement of the observable expectation, especially return-dict key naming, error type and message-substring expectations, and fallback ordering between strategies; (5) UNKNOWNS — explicitly flag what could not be checked in this pass and must be confirmed by reading or running the tests. Prefer precise, citable, decision-relevant facts over narration; mark every claim you did not execute as read-only source evidence rather than verified behaviour.",
+      "trigger_description": "A read-only evidence/research agent hands a partial investigation report to the coordinating agent, before or during implementation work, so the coordinator can scope and delegate an implementation unit without re-reading the whole codebase.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETE",
+              "PARTIAL",
+              "BLOCKED"
+            ],
+            "description": "Coverage label plus a one-line statement of what was and was not verified."
+          },
+          "sources_inspected": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths or areas actually read, so the coordinator knows the evidence base."
+          },
+          "environment_constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Which interpreters/venvs lack tooling and the exact command that does work for building and checking."
+          },
+          "symbol_inventory": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Grouped, exhaustive list of stubbed/missing symbols with locations, plus concrete declarations that must be left intact."
+          },
+          "pinned_constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Behavioural facts fixed by tests or consumer code, each with a citation: return shapes, error types and message substrings, strategy fallback order."
+          },
+          "unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Items that could not be verified in this pass and must be confirmed against tests or by execution."
+          }
+        },
+        "required": [
+          "status",
+          "sources_inspected",
+          "environment_constraints",
+          "symbol_inventory",
+          "pinned_constraints",
+          "unknowns"
+        ]
+      },
+      "required_evidence": [
+        "Explicit coverage status distinguishing verified execution from read-only source reading",
+        "The working build/check invocation and any environments where the usual test tooling is absent",
+        "Exhaustive inventory of missing/stubbed symbols plus the concrete declarations that must be preserved",
+        "Citations (file/line or test name) for each behavioural constraint already fixed by tests or consumer code",
+        "Named return shapes, error types and required message substrings that downstream code depends on",
+        "Explicit list of items left unverified in this pass"
+      ],
+      "verification": "The coordinator can trace each forwarded constraint back to a concrete citation and does not have to re-read the sources to scope the work; items listed as unknowns are confirmed against the tests before being treated as requirements; the implementation unit built from this report passes the project's own build-and-check command.",
+      "fallback": "If execution is impossible in the current environment, deliver the report as PARTIAL with read-only evidence only, state the working check command someone else should run, and list the unverified items explicitly instead of asserting them; if a constraint is genuinely ambiguous, say so and defer to the public tests rather than picking a behaviour silently.",
+      "context_notes": "This report was valuable because it separated two failure modes that look alike: the task's own missing implementation versus an environment where expected tooling is not installed, and it named the command that does work so the coordinator would not misread a broken invocation as a code defect. Its highest-leverage part was the citation-anchored constraint list (return-dict key renaming, error types with required message substrings, ordered fallback between detection strategies), which is exactly the information an implementer would otherwise have to guess. Keep the report factual and bounded to evidence; it should not prescribe solution design or edit scope, which belongs to the coordinator's own delegation contract.",
+      "evidence_task_ids": [
+        "flit_packages"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "evidence_inventory_report_for_implementation",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "from_agent": "chairman",
+      "to_agent": "software_builder",
+      "version": 1,
+      "instruction": "Send the implementer a failure-closure brief, not a status narration. Lead with the verdict line: total pass/fail counts, and an explicit statement of which modules are clean so the implementer does not re-open finished work. Then structure the rest as: (1) REPRODUCE — the exact command, including working directory and interpreter/environment prefix, so the implementer sees identical results and does not re-derive the invocation. (2) ENVIRONMENT-ARTIFACT OUTLIERS — name any failure known to be caused by the environment (missing packaging/distribution metadata, absent tooling) and tell the implementer explicitly not to change source to satisfy it, so they do not \"fix\" a passing build into a broken one. State the reason it is environmental. (3) FAILURES GROUPED BY OWNING UNIT — group every remaining failure by the module/unit that owns it, with the exact failing test identifiers; say up front how many failures belong to each unit so effort is proportional. For each failure give the observed behavior versus the expected behavior as fixed by the test, and when you have a hypothesis about the mechanism, offer it explicitly as a hypothesis to confirm against the test rather than as a directive. (4) WHAT TO READ — point to the specific test classes/cases that pin the expected behavior, since several failures in one cluster usually share a single root cause. Keep the grouped, diagnosable structure; the implementer needs exact identifiers and expected outcomes, not prose. If an item is uncertain, mark it as such and defer to the tests.",
+      "trigger_description": "A coordinating agent, after running the project's full check suite against an implementer's completed pass, reports back the remaining failures so the implementer can close them out — distinct from the initial delegation brief, which sets scope and boundaries before coding starts.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "description": "Pass/fail counts from the full run plus which modules/units are clean and need no further work."
+          },
+          "reproduce_command": {
+            "type": "string",
+            "description": "Exact command with working directory, interpreter and environment prefix that produces the reported results."
+          },
+          "environment_artifacts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Failures caused by the environment rather than the source, with the reason and an explicit instruction not to modify source for them."
+          },
+          "failures_by_unit": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Each remaining failure attributed to the owning unit, with exact test identifiers and observed-vs-expected behavior."
+          },
+          "diagnostic_hypotheses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Likely shared root causes for clusters of failures, marked as hypotheses to confirm against the tests."
+          },
+          "pointers_to_specifying_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Test classes/cases that pin the expected behavior for each failure cluster."
+          }
+        },
+        "required": [
+          "verdict",
+          "reproduce_command",
+          "failures_by_unit",
+          "pointers_to_specifying_tests"
+        ]
+      },
+      "required_evidence": [
+        "Pass/fail counts and an explicit statement of which units are clean",
+        "Exact reproduction command including interpreter and environment prefix",
+        "Per-failure attribution to the owning unit with exact failing test identifiers",
+        "Observed versus expected behavior for each failure",
+        "Explicit separation of environment-caused failures from source defects, with an instruction not to edit source for them",
+        "Pointers to the tests that fix the expected behavior"
+      ],
+      "verification": "The implementer can act on the brief without re-running the suite first: every listed failure is traceable to a specific test identifier and an expected observable outcome, and after the fixes the same reproduction command yields the reported pass counts with no failures attributable to the implementer's units and no source modified to satisfy environment artifacts.",
+      "fallback": "If the full suite cannot be run, say so plainly and hand over only the failures actually observed, labelled as partial coverage, plus the command someone else should run. If a failure's root cause is unclear, state the observed and expected behavior and point at the specifying test instead of asserting a mechanism. Never ask the implementer to weaken, skip or edit tests, and never tell them to edit files outside their unit to make a failure disappear.",
+      "context_notes": "This closes the loop on the initial scope brief: the brief fixes what to build and where the write boundary is, while this brief fixes what is still wrong after the first pass, expressed through concrete identifiers and expected outcomes. Its most load-bearing parts were the reproduction command and the explicit quarantine of the environment-caused failure — without the latter the implementer would likely have edited packaging metadata to chase a failure that was never a source defect. Grouping failures by owning unit kept the pass proportional, and framing mechanism guesses as hypotheses left the implementer anchored to the tests. Keep it factual and diagnostic; this brief does not redefine the write boundary, which still comes from the original delegation contract.",
+      "evidence_task_ids": [
+        "marshmallow_schemas"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "failure_triage_feedback_to_builder",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_21a22b81e3a2",
+      "from_agent": "verifier",
+      "to_agent": "software_builder",
+      "version": 1,
+      "instruction": "Send the implementer a defect report, not a status narration, and state up front that you applied no fixes (read-and-probe only) so they know the code is still theirs to change. Structure it as: (1) HEADER — how the build was exercised (endpoints/UI flows, time window), and explicitly that no source was modified. (2) PASSING — the behaviors your probes confirmed working, so the implementer does not re-open finished work or \"fix\" a passing path into a broken one. (3) ONE BLOCK PER DEFECT — number them, and for each give: the requirement clause it violates in one line; the minimal reproduction (exact request/method/payload or UI steps with concrete inputs, plus the fixture/record you used); OBSERVED value vs EXPECTED value as concrete literals (id, owner id, HTTP status, resulting field contents); and the causal chain you traced, citing the file and line where the value is dropped or the wrong branch is taken, clearly marked as your hypothesis if you did not confirm it by instrumentation. (4) SCOPE/GENERALITY NOTE — say which cases the defect covers and which adjacent cases already work (e.g. \"applies on one lifecycle path only; the other path honours the field\"), so the fix targets the real branch instead of the whole subsystem. (5) RE-VERIFY — the exact probe to re-run after the fix and the observable outcome that confirms closure, so the loop closes on evidence rather than on a code review. Keep each defect self-contained and copy-pasteable; do not prescribe the implementation, do not edit or weaken tests, and do not widen the implementer's write boundary.",
+      "trigger_description": "An independent verifier has exercised a running instance of the implementer's build against the acceptance requirements and is reporting concrete reproducible defects back to the implementer, before final submission.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "description": "Statement that the report is read-and-probe evidence only and that the verifier applied no fixes."
+          },
+          "passing_behaviors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Probes that confirmed correct behavior, so finished areas are not re-opened."
+          },
+          "defects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One entry per defect: violated requirement, minimal reproduction with concrete inputs, observed-vs-expected literals, and the traced causal chain marked as confirmed or hypothesis."
+          },
+          "generality_note": {
+            "type": "string",
+            "description": "Which lifecycle paths/cases the defect covers and which adjacent cases already work, so the fix is targeted."
+          },
+          "reverify_probe": {
+            "type": "string",
+            "description": "Exact probe to re-run after the fix and the observable outcome that confirms closure."
+          }
+        },
+        "required": [
+          "provenance",
+          "defects",
+          "reverify_probe"
+        ]
+      },
+      "required_evidence": [
+        "Statement that no fixes were applied and the source is unchanged",
+        "Per-defect minimal reproduction with concrete request payload or UI steps and the fixture/record used",
+        "Observed versus expected values as concrete literals for each defect",
+        "The requirement clause each defect violates",
+        "A file/line-traced causal chain or an explicit label that the mechanism is a hypothesis",
+        "The list of adjacent behaviors already confirmed passing",
+        "The exact probe and observable outcome that confirms each fix"
+      ],
+      "verification": "The implementer can reproduce each defect from the report alone without re-deriving the setup, fixes only the branches named, and re-running the stated probe yields the expected literal outcome; after the pass the previously passing behaviors still pass and no test was edited to make a defect disappear.",
+      "fallback": "If a defect cannot be reproduced on demand, label it unverified and give the probe that should surface it instead of asserting a mechanism; if the cause is a provider, environment or missing-capability problem rather than the implementer's source, say so and mark it out of scope for the fix; if the observed behavior contradicts the stated requirement, defer to the requirement text and the public checks rather than inventing a behavior.",
+      "context_notes": "In the recorded trace this exact channel produced three well-grounded defects with reproductions, causal chains and a confirmed-passing list, yet the build was still submitted with those defects unresolved (owner assignment dropped on one intake path, nested children not removed with the parent, an over-strict word-boundary match swallowing an exact-match case), and the run scored below full. The strongest part was the per-defect observed-vs-expected literal plus a copy-pasteable probe; the weakest part was that no closure evidence came back from the implementer, so the report should be treated as the opening of a loop. Pair it with the coordinator-side triage brief so an unresolved defect is re-surfaced with its original probe identifier, and keep mechanism guesses labelled as hypotheses so the implementer stays anchored to the reproductions.",
+      "evidence_task_ids": [
+        "paperless_workflows"
+      ],
+      "failure_evidence": [
+        {
+          "task_id": "paperless_workflows",
+          "message_id": "msg_3",
+          "from_agent": "verifier",
+          "to_agent": "software_builder",
+          "handoff_rule_id": "",
+          "score": 0.8333333333333334,
+          "evaluation_summary": "MAC-Bench failed (GC=0.833)",
+          "error": "",
+          "recorded_at": "2026-11-14T17:19:30.483197+00:00"
+        }
+      ],
+      "version_history": [],
+      "rule_id": "verifier_defect_report_to_builder",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "from_agent": "chairman",
+      "to_agent": "verifier",
+      "version": 1,
+      "instruction": "Before the worker's first write or verification pass, send one short dispatch briefing: (1) the exact invocation path for application operations, including the outer tool name, the nested operation name, the arguments wrapper, and a request-id field, with one copy-pasteable example; (2) the contrasting path for public-file, discovery and describe-style tools that are called directly; (3) any name-suffix or exact-spelling requirement, and a note that a wrong path returns an \"unknown tool\" style error rather than executing. Back the briefing with one live probe read you have already performed and quote its concrete native identifiers and figures so the worker can confirm the path works and orient itself without repeating the probe. Tell the worker that a receipt or accepted status alone does not establish completion: it must read the records back live before reporting, and it must not re-run a create after a lost or partial reply — it should inspect the saved receipt and repair the existing object with an update instead.",
+      "trigger_description": "Coordinator delegates execution or verification work to a worker in a multi-application environment where application operations are reached through an indirection layer (bridge/dispatch tool) while public-file and discovery tools are invoked directly, and a mis-dispatched call would waste the worker's steps.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "app_operation_path": {
+            "type": "string",
+            "description": "Exact nested invocation path for live application operations."
+          },
+          "direct_tool_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tools that are invoked directly without the bridge indirection."
+          },
+          "example_call": {
+            "type": "string",
+            "description": "Copy-pasteable worked example of one application operation call."
+          },
+          "naming_rules": {
+            "type": "string",
+            "description": "Exact-name, suffix and request-id conventions."
+          },
+          "probe_findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "business_ref": {
+                  "type": "string"
+                },
+                "native_id": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Results of the coordinator's own live probe read, as orientation evidence."
+          },
+          "verification_expectation": {
+            "type": "string",
+            "description": "What the worker must read back live before reporting completion."
+          },
+          "recovery_rule": {
+            "type": "string",
+            "description": "How to recover a lost or partial write reply without duplicating the object."
+          }
+        }
+      },
+      "required_evidence": [
+        "Exact invocation path for application operations plus one worked example call",
+        "The contrasting list of directly invoked tools",
+        "At least one live-probed reference read with native identifiers and figures",
+        "Explicit statement that receipts are not proof of completion and that live read-back is required",
+        "Recovery instruction for a lost or partial write reply (reuse the request id and repair rather than re-create)"
+      ],
+      "verification": "The worker confirms its first application call succeeds under the briefed path without an unknown-operation error, and reports completion only after reading the affected records back live and comparing them to the intended business outcome; the coordinator checks that reported native identifiers and figures match a fresh read rather than only a receipt.",
+      "fallback": "If the briefed path still fails, the worker stops retrying variants, inspects the saved receipt or tool description for the failing call, asks the coordinator for the corrected invocation rather than guessing, and proceeds with the verifiable subset of work while marking the blocked operations as unresolved.",
+      "context_notes": "The observed value was cumulative: because the dispatch syntax and a few anchor identifiers arrived up front, the downstream worker spent its effort on reconciling schedule, staffing and financial state instead of on tool plumbing, and the episode finished with a fully verified handover. Keep the briefing short and concrete — one example plus one probe result is enough; this is not a repeat of the reconnaissance inventory, and it must not displace the actual scope request.",
+      "evidence_task_ids": [
+        "op26_project_content_operations_001"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "coordinator_bridge_syntax_briefing",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "from_agent": "chairman",
+      "to_agent": "evidence_reconciler",
+      "version": 1,
+      "instruction": "Scope the reconnaissance request in decision-priority order instead of one exhaustive sweep. Ask first only for the facts blocking the next write decision: the native IDs, amounts, statuses and due dates of the records that will be corrected or settled, the current balance/remaining amounts as the source system computes them, and the exact operation names plus required input fields needed to perform those corrections. Label everything else (full line-item detail of every non-exception record, every peripheral entity, every schema in the catalogue) as a clearly separate optional second pass that can be deferred if time is short. Tell the receiver to return partial findings promptly with an explicit \"not yet read / coverage gap\" marker per section rather than waiting for a complete report, and to state which reads are fresh live reads versus public-file references. Keep the read-only constraint explicit, and ask for pagination completeness only where the count of records matters to a decision.",
+      "trigger_description": "Coordinator tasks a read-only reconciler to inventory live application state (records, amounts, statuses, operation schemas) across several business systems before any writes are authorized, in a multi-application financial close or settlement task.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "scope_tier": {
+            "type": "string",
+            "enum": [
+              "decision_critical",
+              "deferred_detail"
+            ],
+            "description": "Which pass this request covers; the receiver must not treat deferred sections as blocking."
+          },
+          "systems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Applications to read, each with the specific question being answered."
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "business_ref": {
+                  "type": "string"
+                },
+                "native_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "due_date": {
+                  "type": "string"
+                },
+                "remaining_or_balance": {
+                  "type": "string"
+                },
+                "source_mismatch": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "operation_schemas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "operation_name": {
+                  "type": "string"
+                },
+                "required_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "optional_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "preconditions": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "coverage_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Sections or records not yet read, stated explicitly by the receiver."
+          },
+          "provenance": {
+            "type": "string",
+            "description": "Which findings come from a fresh live read and which are only from public files."
+          }
+        }
+      },
+      "required_evidence": [
+        "Exact native IDs for each record named in the request",
+        "Numeric totals, amounts paid, and remaining/balance figures as the owning application computes them",
+        "Current status and due date for each record that will be corrected or settled",
+        "Exact operation names and the required input fields needed to perform the upcoming writes",
+        "Explicit statement of which sections were read live versus left unread"
+      ],
+      "verification": "Before acting on the report, the coordinator confirms every decision-critical section is present with native IDs and numbers, that no write was attempted by the read-only receiver, and that declared coverage gaps are either closed by a follow-up read or explicitly accepted as non-blocking.",
+      "fallback": "If the receiver cannot complete the full scope in the time available, it returns the decision-critical portion first with declared gaps, and the coordinator either issues a narrowed follow-up read for a single specific question or proceeds on the inventory already returned while treating unread areas as unverified.",
+      "context_notes": "The observed failure mode here was a single unbounded read request spanning four applications, every individual record of a long invoice list, and the full input schema of many operations; the episode ended at the wall clock with no final output, so no write decision was ever taken on the inventory. The fix is ordering and explicit completeness signalling, not reducing rigor: the receiver should still be exact about IDs, numbers and statuses, and still read live rather than quoting public files, but it must deliver usable partial results early. A read-only reconnaissance pass is only useful if its output arrives in time to drive the first correction.",
+      "evidence_task_ids": [
+        "op26_business_finance_002",
+        "op26_project_content_operations_001"
+      ],
+      "failure_evidence": [
+        {
+          "task_id": "op26_business_finance_002",
+          "message_id": "msg_1",
+          "from_agent": "chairman",
+          "to_agent": "evidence_reconciler",
+          "handoff_rule_id": "",
+          "score": 0.0,
+          "evaluation_summary": "MAC-Bench failed (GC=0.000)",
+          "error": "",
+          "recorded_at": "2026-11-14T08:14:08.512820+00:00"
+        }
+      ],
+      "version_history": [],
+      "rule_id": "finance_close_readonly_recon_scope",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "from_agent": "evidence_reconciler",
+      "to_agent": "state_operator",
+      "version": 1,
+      "instruction": "Deliver findings as implementation-ready write recipes, not as a narrative report. For each distinct write the operator will perform, give: the exact nested operation name with any version/hash suffix spelled character-for-character; the required versus optional input fields; any field whose name differs from the intuitive guess (state the real name and explicitly flag the wrong one); and the allowed enum values or status literals. Pair every recipe with the concrete native identifiers it acts on, grouped by system, so the operator can copy them rather than search. State clearly which existing records already exist and must be left as they are (for example pre-existing drafts that would duplicate coverage if activated), and which write path is the correct way to retire or neutralize a record instead of deleting it. Say for each fact whether it came from a fresh live read or only from public reference material. Close with the small set of changes that are actually required, so the operator can treat everything else as optional detail rather than re-deriving it.",
+      "trigger_description": "A read-only investigator/reconciler hands its verified findings to an executing operator who will perform writes across several business applications, and the operator would otherwise have to rediscover operation names, field spellings, enum values and native record IDs before it can act.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "operation_recipes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "operation_name": {
+                  "type": "string",
+                  "description": "Exact name including any suffix, as invoked."
+                },
+                "required_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "optional_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "field_name_corrections": {
+                  "type": "string",
+                  "description": "Real field names versus intuitive-but-wrong guesses."
+                },
+                "allowed_values": {
+                  "type": "string",
+                  "description": "Enum or status literals accepted by the operation."
+                },
+                "creates_or_updates": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "native_ids": {
+            "type": "object",
+            "description": "Native identifiers per system, sufficient to act without further searching."
+          },
+          "minimal_required_changes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The smallest set of writes needed to satisfy the goal; the rest is optional detail."
+          },
+          "records_to_leave_untouched": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "record": {
+                  "type": "string"
+                },
+                "current_state": {
+                  "type": "string"
+                },
+                "why_leave": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "retirement_path": {
+            "type": "string",
+            "description": "How to inactivate/cancel an existing object in place rather than deleting or recreating it."
+          },
+          "provenance": {
+            "type": "string",
+            "description": "Which facts are fresh live reads versus public references."
+          }
+        },
+        "required": [
+          "operation_recipes",
+          "native_ids",
+          "provenance"
+        ]
+      },
+      "required_evidence": [
+        "Exact operation names with any version suffix, plus required versus optional input fields for each write",
+        "Field names that differ from the intuitive guess, stated explicitly with the wrong variant flagged",
+        "Allowed enum/status literals for constrained fields",
+        "Concrete native identifiers for every record the writes will touch",
+        "Explicit list of existing records that must be left in their current state to avoid duplicate coverage",
+        "Statement of which facts are fresh live reads versus public-file references"
+      ],
+      "verification": "The operator confirms the recipe against the live system before its first write — either a successful call under the stated operation name or a description/probe read matching the stated required fields and enums — and reports completion only after reading the affected records back and comparing them to the intended business outcome. The reconciler's native identifiers and figures in the report must match that fresh read, not merely an accepted receipt.",
+      "fallback": "If a recipe does not take effect as described, the operator stops retrying name or field variants, inspects the operation description or the saved receipt for the failed call, reads the record back live, proceeds with the subset of writes that verify cleanly, and reports the specific discrepancy back to the reconciler as a coverage gap rather than guessing at an alternative payload.",
+      "context_notes": "The value observed was that the operator inherited unambiguous payload shapes (including the real field name for a due date, the accepted status literals, and the correct reference to an existing shift type) together with the guidance that already-present inactive drafts must stay unsubmitted because submitting them would create duplicate coverage. Keep this contract distinct from the dispatch-syntax briefing: that one tells a worker how to reach application operations at all, whereas this one tells the operator what to send and to which objects. Precision about names, enums and native IDs is the point; do not compress the recipes into prose summaries.",
+      "evidence_task_ids": [
+        "op26_project_content_operations_001"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "recon_to_operator_write_payload_spec",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "from_agent": "constraint_solver",
+      "to_agent": "chairman",
+      "version": 1,
+      "instruction": "When you correct or restate a feasibility result for the coordinator, label the correction as such in the first line, name exactly which earlier claim was wrong and why (e.g. the total was computed on a gross basis while the governing constraint nets an offset), and give the corrected figure on the basis the policy actually applies. Recompute and show the full arithmetic for each option you endorse: the cost delta of exercising the option, the offset or obligation it clears, the resulting running total, and the remaining headroom against the binding ceiling. State which candidate options actually qualify against the hard constraints and why (capacity, count, resource collision and the like), and note any candidate that fails them so it is not reconsidered. Then give a clear recommendation: which option you would take, and whether it is materially safer or merely equivalent, with the headroom that supports that judgement. Explicitly separate recommendation from blocker: say whether the decision is the coordinator's to make and instruct it not to let the choice delay the write path, so an open question never stalls execution. Keep the answer narrow — one correction, the recomputed numbers, the qualifying set, the recommendation — not a re-derivation of the whole analysis.",
+      "trigger_description": "A constraint/feasibility solver hands its validated option analysis back to the coordinator who is about to authorize writes, and the analysis must be restated or corrected because the cost basis used earlier (gross only) differs from the basis the binding policy applies (net of offsets, credits or guarantee netting).",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "correction_scope": {
+            "type": "string",
+            "description": "Which specific earlier claim is being corrected or confirmed, and whether other findings still stand."
+          },
+          "cost_basis": {
+            "type": "string",
+            "description": "Whether figures are gross, gross-of-X-net-of-Y, or fully netted, and which basis the governing policy applies."
+          },
+          "option_scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "option": {
+                  "type": "string"
+                },
+                "delta_cost": {
+                  "type": "string"
+                },
+                "offset_or_obligation_cleared": {
+                  "type": "string"
+                },
+                "running_total": {
+                  "type": "string"
+                },
+                "remaining_headroom": {
+                  "type": "string"
+                },
+                "qualifies": {
+                  "type": "boolean"
+                },
+                "qualification_reason": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "Preferred option plus whether it is safer or merely equivalent, with the headroom that justifies it."
+          },
+          "not_a_blocker": {
+            "type": "string",
+            "description": "Explicit statement that the remaining choice belongs to the coordinator and must not delay the write path."
+          }
+        },
+        "required": [
+          "correction_scope",
+          "cost_basis",
+          "option_scenarios",
+          "recommendation"
+        ]
+      },
+      "required_evidence": [
+        "Explicit statement of which prior claim was wrong and which findings are unchanged",
+        "Cost basis of every figure, and the basis the governing constraint actually applies",
+        "Per-option arithmetic: delta cost, offset or obligation cleared, running total, remaining headroom against the ceiling",
+        "Which candidate options satisfy the hard constraints and which are excluded, with reasons",
+        "A recommendation naming the option and whether it is safer or merely equivalent",
+        "Explicit note that the residual choice is the coordinator's and must not block execution"
+      ],
+      "verification": "The coordinator re-adds the stated deltas and offsets against its own locked cost baseline and confirms the reported total and headroom reconcile to the binding ceiling before authorising writes; if the corrected total does not reconcile, it returns the discrepancy to the solver for one focused recheck rather than proceeding on the narrative.",
+      "fallback": "If the solver cannot close the recomputation in time, it sends the corrected basis and the direction of the error first (total is X higher or lower than reported), states which option set is safe on that basis, and flags the unreconciled figure as an open item; the coordinator proceeds with the conservative option and records the pending reconciliation rather than halting the write path.",
+      "context_notes": "The observed value was a late single-line correction that flipped an earlier conclusion from \"an addition is infeasible\" to \"feasible, with headroom\", because the original total ignored an obligation the addition itself would clear. The coordinator could then keep its safer selection and still know the alternative was open. Keep this contract distinct from the reconnaissance and payload-spec rules: those govern how to reach operations and what payload to send, whereas this one governs how a solver states, corrects and reconciles the numbers a coordinator uses to choose between legitimate options. The correlation matters more than the arithmetic style — always mark the basis, because a gross figure and a net figure for the same option lead to opposite decisions.",
+      "evidence_task_ids": [
+        "op26_project_content_operations_001"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "solver_to_coordinator_net_cost_feasibility",
+      "status": "active"
+    },
+    {
+      "handoff_family_id": "hf_family_67cdb6285abd",
+      "from_agent": "verifier",
+      "to_agent": "chairman",
+      "version": 1,
+      "instruction": "Report verification as a per-item verdict list, not as prose: for each check, state the expected condition, the PASS/FAIL verdict, and the live identifiers and figures that prove it (native record names/IDs, employee or entity IDs, dates, amounts, counts, and the modified timestamps showing the read is current). Mark the read window and a request-id prefix so the coordinator knows the observations are fresh and attributable to this pass.\n\nWhen a record was cancelled and replaced during repair, quote the CURRENT native name and explicitly say the earlier name no longer exists, giving its replacement behaviour (e.g. direct read returns not-found and it appears in neither the active nor the inactive listing). Flag any downstream document that still maps the stale name — including other agents' reports — as a naming correction that must be amended in their records, and state clearly whether the substantive mapping (entity, dates, type) is unchanged so the correction is scoped to the identifier only.\n\nSeparate verified facts from known application-side artefacts: if a denormalised aggregate field disagrees with record-level evidence, state which basis is correct and instruct the coordinator NOT to \"fix\" it with a corrective write, since that would corrupt preserved data. Also confirm that records which must remain untouched (inactive drafts, original bills/payments/allocations, unrelated records) are still in their original state.\n\nClose with an explicit overall verdict and whether any corrective action is required, so the coordinator can proceed to handover rather than re-deriving the state.",
+      "trigger_description": "A read-only verifier hands its post-write verification result back to the coordinator who will decide whether the handover is complete, in a multi-application task where records were created, updated in place, cancelled/replaced, or superseded during repair, and where application-side aggregate fields may disagree with record-level evidence.",
+      "payload_schema": {
+        "type": "object",
+        "properties": {
+          "read_window": {
+            "type": "string",
+            "description": "Time range and request-id prefix establishing that all reads are fresh live reads from this pass."
+          },
+          "verdict_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "check_id": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "string"
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "FAIL"
+                  ]
+                },
+                "live_identifiers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "figures": {
+                  "type": "string"
+                },
+                "evidence_note": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "cross_agent_naming_corrections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "report_or_record": {
+                  "type": "string"
+                },
+                "stale_identifier": {
+                  "type": "string"
+                },
+                "current_identifier": {
+                  "type": "string"
+                },
+                "substantive_mapping_unchanged": {
+                  "type": "boolean"
+                },
+                "action_requested": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "known_artefacts_do_not_fix": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "app_value": {
+                  "type": "string"
+                },
+                "record_level_value": {
+                  "type": "string"
+                },
+                "correct_basis": {
+                  "type": "string"
+                },
+                "why_no_write": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "unchanged_confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Records that must stay untouched and were confirmed unchanged."
+          },
+          "overall_verdict": {
+            "type": "string"
+          },
+          "corrective_action_required": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verdict_items",
+          "overall_verdict"
+        ]
+      },
+      "required_evidence": [
+        "Per-check PASS/FAIL verdict with the live native identifiers and figures that prove it",
+        "Read window and request-id prefix showing the observations are fresh live reads, not echoed receipts",
+        "For replaced records: the current native name plus evidence that the superseded name is gone (not-found / absent from listings)",
+        "Explicit naming correction wherever another report or record still maps a superseded identifier",
+        "Statement of which application-side aggregate or denormalised fields are artefacts that must not be corrected by a write",
+        "Confirmation that records which must remain untouched are still in their original state",
+        "Overall verdict and whether corrective action is required"
+      ],
+      "verification": "The coordinator checks that every verified item carries a native identifier and figure it can match to its own accounting, that no corrective action is proposed for denormalised application artefacts, and that any superseded identifier it had recorded is amended before it issues the completion report; a PASS claimed without live identifiers is treated as unverified.",
+      "fallback": "If the verifier cannot finish all checks in time, it sends the verdicts it has completed with the same identifier-and-figure evidence, marks each unread check as a declared coverage gap rather than PASS, and states the single most likely remaining discrepancy; the coordinator proceeds with the verified subset and either orders one narrowed re-check or records the gap as an open item instead of delaying handover.",
+      "context_notes": "Observed value: the verification pass flipped a correctness detail that no other agent could have caught — a scheduled row had been cancelled and recreated during repair, so the live native name differed from the one already circulated to the reconciler; the verifier flagged the stale name as a report-only correction while confirming the underlying entity, dates and type were unchanged, so no writes were repeated. It also prevented a well-intentioned destructive \"fix\" of a denormalised balance that disagreed with record-level amounts. Keep this contract distinct from the reconnaissance and payload-spec rules: those govern reading and writing, whereas this one governs how a completed verification asserts state, scopes corrections to identifiers, and protects preserved evidence. Do not compress the per-item verdicts into a summary paragraph.",
+      "evidence_task_ids": [
+        "op26_project_content_operations_001"
+      ],
+      "failure_evidence": [],
+      "version_history": [],
+      "rule_id": "verifier_to_coordinator_verified_state_report",
+      "status": "active"
+    }
+  ]
+}

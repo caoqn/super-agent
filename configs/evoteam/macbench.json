@@ -1,0 +1,20 @@
+{
+  "benchmark": "macbench",
+  "args": [
+    "--team",
+    "pool_MACBENCH_OURS_V006_TEST",
+    "--split",
+    "test",
+    "--workers",
+    "1"
+  ],
+  "status": "blocked_upstream_compatibility",
+  "provenance": "Imported example settings; paper-run settings have not been verified.",
+  "env_original": {
+    "META_TEAM_MODEL": "deepseek-chat",
+    "TEAM_SELECTOR_MODEL": "deepseek-chat",
+    "TEAM_REFLECTION_MODEL": "deepseek-chat",
+    "META_TEAM_MAX_STEPS": "unlimited"
+  },
+  "env_note": "Original uploaded environment names, retained for provenance only. Not applied by the data/check runner; official EvoTeam uses EVOTEAM_MODEL and does not read META_TEAM_MODEL."
+}

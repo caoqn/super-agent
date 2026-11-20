@@ -1,10 +1,10 @@
 # Super Agent evaluation adapters
 
-This repository separates **method implementations** from their **benchmark adapters**. `methods/` holds reusable method-level code; `benchmarks/` is grouped by dataset and contains the corresponding adapters, runners, task-specific prompts, scoring, and setup instructions. The currently public code covers part of the full experiment matrix; additional baselines can be added as they are released.
+This repository separates **method implementations** from their **benchmark adapters**. `methods/` holds method source references, setup documentation, and existing reusable method-level code; `benchmarks/` is grouped by dataset and contains the corresponding adapters, runners, task-specific prompts, scoring, and setup instructions. The currently public code covers part of the full experiment matrix; additional baselines can be added as they are released.
 
 ## Layout
 
-- `methods/<method>/` contains method-level code, such as the ReAct loop, AgentNet core patch and embedding implementation, and method documentation.
+- `methods/<method>/` contains method-level code, such as the ReAct loop, AgentNet core patch and embedding implementation, and method documentation. EvoTeam stores only the external source reference and setup notes here.
 - `benchmarks/<benchmark>/adapters/<method>/` contains that method's integration with one benchmark.
 - `benchmarks/<benchmark>/README.md` contains shared dataset and evaluation notes.
 - `configs/matrix.yaml` lists the method/benchmark combinations currently represented here.
@@ -56,3 +56,7 @@ The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/ma
 ## Super Agent
 
 The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.
+
+## EvoTeam
+
+The preserved EvoTeam adapters and experiment configs are documented in [methods/evoteam](methods/evoteam/README.md). Execution is currently gated because the selected upstream source lacks required interfaces.

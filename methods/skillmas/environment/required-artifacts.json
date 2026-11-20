@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "notice": "Official source repositories are documented in the benchmark READMEs. External data and runtimes are intentionally not vendored. The remaining fields identify version/access evidence needed for strict reproduction.",
+  "artifacts": [
+    {
+      "benchmark": "gaia",
+      "required": [
+        "level_1_train_20.json", "level_2_train_20.json", "level_3_train_20.json",
+        "level_1_test_100.json", "level_2_test_100.json", "level_3_test_100.json",
+        "val_files/ (all referenced attachments)"
+      ],
+      "source_url": "https://huggingface.co/datasets/gaia-benchmark/GAIA",
+      "revision": null,
+      "license_or_access_terms": "See the dataset card and access terms at source_url.",
+      "sha256_manifest": null
+    },
+    {
+      "benchmark": "masbench",
+      "required": ["Reasoning/reasoning.json", "Scheduling/", "Game/custom_map/", "Game simulator package"],
+      "source_url": "https://github.com/BUPT-GAMMA/MASBench",
+      "revision": null,
+      "license_or_access_terms": "See upstream repository license and dataset terms; this checkout does not identify a clean source revision for the historical local data copy.",
+      "sha256_manifest": null
+    },
+    {
+      "benchmark": "macbench",
+      "required": ["tasks.json", "public_tasks.json", "48 frozen test task bundles", "MAC-Bench task harness", "required services and container images"],
+      "source_url": "https://github.com/rzchen777-wq/MAC_Bench",
+      "revision": "data world revisions are pinned per task in ../experiment_evidence.json",
+      "license_or_access_terms": "See the upstream repository license and data/service access terms.",
+      "sha256_manifest": null,
+      "harness_commit": null,
+      "container_image_digests": null
+    }
+  ]
+}

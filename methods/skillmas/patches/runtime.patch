@@ -1,0 +1,1872 @@
+--- a/core/cli.py
++++ b/core/cli.py
+@@ -29,27 +29,35 @@
+     log_root_for,
+     results_dataset_dir,
+ )
+-from .dataset_split import load_split_file
+-from .pipeline import evolve, snapshot_baseline_only
+ from .task_select import (
+     browsecomp_validate_ids,
+     drb_validate_ids,
+     hlemath_validate_ids,
++    native_validate_ids,
+     vitabench_validate_ids,
+ )
+
+
+ def cmd_list_val(args: argparse.Namespace) -> None:
++    from .dataset_split import load_split_file
+     bb = (args.bench_backend or "vitabench").strip().lower()
+-    if not getattr(args, "jsonl", "").strip():
++    if not getattr(args, "jsonl", "").strip() and bb not in {"gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench", "mac_bench", "mac-bench"}:
+         raise ValueError("--jsonl is required for all backends.")
+-    unified_jsonl = Path(args.jsonl).resolve()
++    unified_jsonl = Path(args.jsonl).resolve() if getattr(args, "jsonl", "").strip() else None
+     if getattr(args, "split_file", "").strip():
+         sp = load_split_file(Path(args.split_file.strip()).resolve())
+         ids = [str(x) for x in (sp.get("ids") or sp.get("val_ids") or [])]
+         if int(getattr(args, "max_problems", 0) or 0) > 0:
+             ids = ids[: int(args.max_problems)]
+         print(f"split_file={args.split_file} count={len(ids)}")
++        for i in ids:
++            print(i)
++        return
++    if bb in {"gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench", "mac_bench", "mac-bench"}:
++        ids = native_validate_ids(bb, unified_jsonl, split=getattr(args, "native_split", "test"))
++        if int(getattr(args, "max_problems", 0) or 0) > 0:
++            ids = ids[: int(args.max_problems)]
++        print(f"bench_backend={bb} source={unified_jsonl or 'adapter default'} count={len(ids)}")
+         for i in ids:
+             print(i)
+         return
+@@ -101,6 +109,7 @@
+
+
+ def cmd_init(args: argparse.Namespace) -> None:
++    from .pipeline import snapshot_baseline_only
+     init_root = (
+         Path(args.init_skill_root.strip()).resolve()
+         if args.init_skill_root.strip()
+@@ -123,8 +132,10 @@
+
+
+ def cmd_evolve(args: argparse.Namespace) -> None:
+-    if not getattr(args, "jsonl", "").strip():
+-        raise ValueError("--jsonl is required for all backends.")
++    from .pipeline import evolve
++    native_backends = {"gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"}
++    if not getattr(args, "jsonl", "").strip() and args.bench_backend not in native_backends:
++        raise ValueError("--jsonl is required for this backend.")
+     init_root = (
+         Path(args.init_skill_root.strip()).resolve()
+         if args.init_skill_root.strip()
+@@ -163,8 +174,9 @@
+         k_trajectories=args.k_trajectories,
+         hlemath_jsonl=None,
+         bcp_jsonl=None,
+-        jsonl_path=Path(args.jsonl).resolve(),
++        jsonl_path=Path(args.jsonl).resolve() if args.jsonl.strip() else None,
+         max_problems=int(getattr(args, "max_problems", 0) or 0),
++        native_split=args.native_split,
+         bcp_judge_llm=(_bcp_judge if _bcp_judge else None),
+         bcp_judge_timeout_s=float(getattr(args, "judge_timeout_s", 120.0)),
+         bcp_index_path=Path(_bcp_idx).resolve() if _bcp_idx else None,
+@@ -200,7 +212,7 @@
+     p_list.add_argument(
+         "--bench-backend",
+         default="vitabench",
+-        choices=("vitabench", "drb", "hlemath", "bcp"),
++        choices=("vitabench", "drb", "hlemath", "bcp", "gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"),
+         help="Task source backend",
+     )
+     p_list.add_argument(
+@@ -215,6 +227,7 @@
+         help="Limit number of validation problems loaded (0 = all).",
+     )
+     p_list.set_defaults(func=cmd_list_val)
++    p_list.add_argument("--native-split", choices=("train", "dev", "test"), default="test")
+
+     p_split = sub.add_parser(
+         "split-build",
+@@ -233,7 +246,7 @@
+     p_split.add_argument(
+         "--bench-backend",
+         default="vitabench",
+-        choices=("vitabench", "drb", "hlemath", "bcp"),
++        choices=("vitabench", "drb", "hlemath", "bcp", "gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"),
+     )
+     p_split.add_argument(
+         "--hlemath-jsonl",
+@@ -259,7 +272,7 @@
+     p_init.add_argument(
+         "--bench-backend",
+         default="vitabench",
+-        choices=("vitabench", "drb", "hlemath", "bcp"),
++        choices=("vitabench", "drb", "hlemath", "bcp", "gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"),
+         help="Artifact subtree under Skill_MAS/results/<dataset>_<agent_model>/",
+     )
+     p_init.add_argument(
+@@ -292,6 +305,8 @@
+     p_e.add_argument("--optimizer-llm", default=DEFAULT_OPTIMIZER_LLM)
+     p_e.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
+     p_e.add_argument("--max-concurrency", type=int, default=DEFAULT_MAX_CONCURRENCY)
++    p_e.add_argument("--native-split", choices=("train", "dev", "test"), default="train",
++                     help="Native dataset partition used for evolution (default: train).")
+     p_e.add_argument("--language", default=DEFAULT_LANGUAGE)
+     p_e.add_argument(
+         "--run-id",
+@@ -308,7 +323,7 @@
+     p_e.add_argument(
+         "--bench-backend",
+         default="vitabench",
+-        choices=("vitabench", "drb", "hlemath", "bcp"),
++        choices=("vitabench", "drb", "hlemath", "bcp", "gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"),
+         help="vitabench | drb+RACE | hlemath JSONL | bcp JSONL",
+     )
+     p_e.add_argument(
+@@ -337,7 +352,7 @@
+         "--k-trajectories",
+         type=int,
+         default=EVOLVE_K_TRAJECTORIES,
+-        help="Step1: number of trajectories per sample",
++        help="Step1: number of trajectories per sample (>=2 for contrastive evolution)",
+     )
+     p_e.add_argument(
+         "--judge-llm",
+--- a/core/pipeline.py
++++ b/core/pipeline.py
+@@ -16,15 +16,8 @@
+
+ from ..utils.config import resolve_init_skill_root
+ from ..evolution.assemble_select import compute_round_score, finalize_best_round, update_round_scoreboard
+-from ..evolution.bank_optimizer import run_bank_evolution_step_async
+-from ..evolution.contrastive_reflect import run_local_contrastive_reflection_async
+-from ..evolution.rollout_multi import run_multi_trajectory_rollout
+ from ..evolution.agent_patch import apply_skill_mas_patches
+-from ..evolution.bench_eval import (
+-    ensure_bcp_jsonl_readable,
+-    ensure_drb_bench_layout,
+-    ensure_hlemath_jsonl_readable,
+-)
++from ..bench_adapters import get_adapter
+ from ..utils.run_log_export import export_comprehensive_round_logs, export_round_artifact_index
+ from ..utils.llm_cost import (
+     PricingModelError,
+@@ -88,6 +81,11 @@
+     domain: str,
+ ) -> tuple[tuple[Any, ...], tuple[dict[str, Any], list[dict[str, Any]]]]:
+     """Contrastive reflection then bank SKILL rewrite in one event loop (single asyncio.run from evolve)."""
++    # Keep CLI task discovery/imports usable without the optional plotting
++    # stack. The optimizer is only needed when an evolution round runs.
++    from ..evolution.contrastive_reflect import run_local_contrastive_reflection_async
++    from ..evolution.bank_optimizer import run_bank_evolution_step_async
++
+     contrastive_out = await run_local_contrastive_reflection_async(
+         by_task=by_task,
+         round_root=round_root,
+@@ -214,6 +212,7 @@
+     bcp_jsonl: Path | None = None,
+     jsonl_path: Path | None = None,
+     max_problems: int = 0,
++    native_split: str = "train",
+     bcp_judge_llm: str | None = None,
+     bcp_judge_timeout_s: float = 120.0,
+     bcp_index_path: Path | str | None = None,
+@@ -221,10 +220,29 @@
+     bcp_doc_max_tokens: int = 512,
+     bcp_max_retrieval_rounds: int = 10,
+ ) -> str:
++    # Contrastive reflection needs a low/high rollout pair for every task.
++    # A legacy/resume run may intentionally use k=1; preserve its rollout
++    # semantics and finish the round without invoking the optimizer.
++    try:
++        k_trajectories = int(k_trajectories)
++    except (TypeError, ValueError) as e:
++        raise ValueError("k_trajectories must be an integer >= 1") from e
++    if k_trajectories < 1:
++        raise ValueError("k_trajectories must be >= 1")
++    enable_evolution = k_trajectories >= 2
++
++    from ..evolution.rollout_multi import run_multi_trajectory_rollout
+     bb = (bench_backend or "vitabench").strip().lower()
+-    if jsonl_path is None:
+-        raise ValueError("--jsonl is required for all backends.")
+-    unified_jsonl = Path(jsonl_path).resolve()
++    native_backends = {"gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"}
++    if bb not in native_backends:
++        from ..evolution.bench_eval import (
++            ensure_bcp_jsonl_readable,
++            ensure_drb_bench_layout,
++            ensure_hlemath_jsonl_readable,
++        )
++    if jsonl_path is None and bb not in native_backends:
++        raise ValueError("--jsonl is required for this backend.")
++    unified_jsonl = Path(jsonl_path).resolve() if jsonl_path is not None else None
+
+     if bb == "vitabench":
+         _ensure_vita_path()
+@@ -239,10 +257,10 @@
+         ensure_bcp_jsonl_readable(unified_jsonl)
+         if not BROWSECOMP_BENCH_ROOT.is_dir():
+             raise FileNotFoundError(f"BrowseComp-Plus repo not found: {BROWSECOMP_BENCH_ROOT}")
+-    else:
++    elif bb not in native_backends:
+         raise ValueError(
+             f"Unknown bench_backend={bench_backend!r}; "
+-            "use 'vitabench', 'drb', 'hlemath', or 'bcp'."
++            "use 'vitabench', 'drb', 'hlemath', 'bcp', or a native benchmark backend."
+         )
+
+     models = _load_model_defaults()
+@@ -268,6 +286,10 @@
+             jf = sp.get("jsonl_file")
+             if jf:
+                 resolved_bcp_jsonl = Path(str(jf)).resolve()
++    elif bb in native_backends:
++        task_ids = [str(task.task_id) for task in get_adapter(bb).load_tasks(unified_jsonl, split=native_split)]
++        if not task_ids:
++            raise RuntimeError(f"No task ids available for native backend {bb}")
+     elif bb == "vitabench":
+         task_ids = vitabench_validate_ids(resolved_vita_validate_file)
+         if not task_ids:
+@@ -297,6 +319,25 @@
+     start_r, need_init, status = compute_resume_start(
+         bench_id, run_id, rounds, bench_backend=bb, agent_llm=agent_llm
+     )
++    # A completed round with k=1 is not complete when the caller requests a
++    # second trajectory: reuse traj_00 and resume round 00 to produce traj_01.
++    # The ordinary resume helper only tracks round summaries, so inspect the
++    # recorded trajectory count before honoring its terminal status.
++    if status == "complete" and bb in native_backends and int(max(1, k_trajectories)) > 1:
++        summary_path = runs_dir(bb, agent_llm) / bench_id / run_id / "summary_r00.json"
++        existing_k = 0
++        try:
++            payload = json.loads(summary_path.read_text(encoding="utf-8"))
++            existing_k = int((payload.get("aggregate") or {}).get("k_trajectories", 0))
++        except Exception:
++            existing_k = 0
++        if existing_k < int(max(1, k_trajectories)):
++            start_r, need_init, status = 0, False, None
++            print(
++                f"Resuming completed round 00 to add trajectories: existing_k={existing_k}, "
++                f"requested_k={int(max(1, k_trajectories))}.",
++                flush=True,
++            )
+     if status == "complete":
+         print(f"Evolve already complete for bench_id={bench_id} run_id={run_id} (all {rounds} eval rounds done).")
+         return run_id
+@@ -346,7 +387,9 @@
+         opt_sections: list[dict[str, Any]] = []
+         eval_section: dict[str, Any] = {}
+         try:
+-            if bb == "vitabench":
++            if bb in native_backends:
++                current_task_ids = task_ids
++            elif bb == "vitabench":
+                 current_task_ids = task_ids
+             elif bb == "drb":
+                 current_task_ids = [str(x) for x in task_ids_int]
+@@ -384,33 +427,72 @@
+                 bcp_retrieval_topk=bcp_retrieval_topk,
+                 bcp_doc_max_tokens=bcp_doc_max_tokens,
+                 bcp_max_retrieval_rounds=bcp_max_retrieval_rounds,
++                native_jsonl_path=unified_jsonl,
++                native_split=native_split,
+             )
+             eval_section = _aggregate_eval_sections(eval_sections)
+
++            # Never reflect on a partial native batch. A failed/timeout task
++            # may be absent from ``by_task`` until a resume pass rebuilds its
++            # durable trace, so the optimizer must wait for every task to have
++            # the requested number of trajectories.
++            if bb in native_backends:
++                expected = len(current_task_ids)
++                incomplete = {
++                    str(tid): len(by_task.get(str(tid), []))
++                    for tid in current_task_ids
++                    if len(by_task.get(str(tid), [])) < int(max(1, k_trajectories))
++                }
++                if incomplete:
++                    partial = {
++                        "round_idx": r,
++                        "status": "partial_rollout",
++                        "expected_tasks": expected,
++                        "expected_trajectories_per_task": int(max(1, k_trajectories)),
++                        "incomplete_tasks": incomplete,
++                        "message": "optimizer skipped until the full native batch is complete",
++                    }
++                    partial_path = round_root / "partial_rollout.json"
++                    partial_path.write_text(json.dumps(partial, ensure_ascii=False, indent=2), encoding="utf-8")
++                    print(
++                        f"[Skill_MAS] partial native batch: {len(incomplete)}/{expected} tasks incomplete; "
++                        "skipping reflection/optimizer. Resume the same run to continue.",
++                        flush=True,
++                    )
++                    continue
++
+             cur_skill_root = skills_evolution_dir(bb, agent_llm) / bench_id / run_id / f"round_{r:02d}"
+-            contrastive_out, bank_pair = asyncio.run(
+-                _run_optimizer_phases_async(
+-                    by_task=by_task,
+-                    round_root=round_root,
+-                    cur_skill_root=cur_skill_root,
+-                    opt_model=opt_model,
+-                    opt_args=opt_args,
+-                    r=r,
+-                    rounds=rounds,
+-                    bb=bb,
+-                    bench_id=bench_id,
+-                    domain=domain,
++            if enable_evolution:
++                contrastive_out, bank_pair = asyncio.run(
++                    _run_optimizer_phases_async(
++                        by_task=by_task,
++                        round_root=round_root,
++                        cur_skill_root=cur_skill_root,
++                        opt_model=opt_model,
++                        opt_args=opt_args,
++                        r=r,
++                        rounds=rounds,
++                        bb=bb,
++                        bench_id=bench_id,
++                        domain=domain,
++                    )
+                 )
+-            )
+-            _, _, contrastive_usage = contrastive_out
+-            bank_meta, bank_usage = bank_pair
+-            opt_sections.extend(contrastive_usage)
+-            opt_sections.extend(bank_usage)
++                _, _, contrastive_usage = contrastive_out
++                bank_meta, bank_usage = bank_pair
++                opt_sections.extend(contrastive_usage)
++                opt_sections.extend(bank_usage)
++            else:
++                bank_meta = {
++                    "skipped": True,
++                    "reason": "k_trajectories=1; no contrastive pair available",
++                }
++                bank_usage = []
+
+             round_score = compute_round_score(by_task)
+             aggregate = {
+                 "num_tasks": len(by_task),
+                 "k_trajectories": int(max(1, k_trajectories)),
++                "evolution_enabled": bool(enable_evolution),
+                 "bank_evolution": bank_meta,
+             }
+             score_payload = update_round_scoreboard(
+@@ -536,4 +618,3 @@
+     root = resolve_init_skill_root(init_skill_root)
+     init_round_zero(bench_id, run_id, init_skill_root=root, bench_backend=bb, agent_llm=agent_llm)
+     return run_id
+-
+--- a/core/task_select.py
++++ b/core/task_select.py
+@@ -73,3 +73,9 @@
+         return [str(x) for x in data["ids"]]
+     return [str(x) for x in (data.get("test_ids") or [])]
+
++
++def native_validate_ids(backend: str, source: Path | None = None, *, split: str = "test") -> list[str]:
++    """Load IDs through the isolated native adapter package."""
++    from ..bench_adapters import get_adapter
++    adapter = get_adapter(backend)
++    return [str(task.task_id) for task in adapter.load_tasks(source, split=split)]
+--- a/evolution/bank_optimizer.py
++++ b/evolution/bank_optimizer.py
+@@ -8,9 +8,12 @@
+ from pathlib import Path
+ from typing import Any
+
+-import matplotlib
+-matplotlib.use("Agg")
+-import matplotlib.pyplot as plt
++try:
++    import matplotlib
++    matplotlib.use("Agg")
++    import matplotlib.pyplot as plt
++except ImportError:  # plotting is optional; optimization itself must still run
++    plt = None
+
+ from vita.agent.skill_mas_runtime import parse_skill_file
+
+@@ -95,9 +98,14 @@
+         encoding="utf-8",
+     )
+
++    reflection_cap = (
++        len(task_rows)
++        if EVOLVE_MAX_REFLECTION_CASES_PER_ROUND is None
++        else int(max(1, EVOLVE_MAX_REFLECTION_CASES_PER_ROUND))
++    )
+     _, priority_report = compute_reflection_task_selection(
+         task_rows,
+-        max_reflection_cases=int(max(1, EVOLVE_MAX_REFLECTION_CASES_PER_ROUND)),
++        max_reflection_cases=reflection_cap,
+         sensitivity=1.0,
+     )
+     priority_payload = {"round_idx": int(round_idx), **priority_report}
+@@ -105,6 +113,12 @@
+         json.dumps(priority_payload, ensure_ascii=False, indent=2),
+         encoding="utf-8",
+     )
++
++    # The knee-selection JSON is required by evolution; the PDF is only a
++    # convenience artifact.  Keep optimization usable in minimal environments
++    # where matplotlib is not installed.
++    if plt is None:
++        return
+
+     pdf_path = knee_dir / f"knee_r{round_idx:02d}.pdf"
+     fig, ax = plt.subplots(figsize=(10, 4))
+--- a/evolution/contrastive_reflect.py
++++ b/evolution/contrastive_reflect.py
+@@ -4,6 +4,7 @@
+
+ import asyncio
+ import json
++import os
+ from pathlib import Path
+ from typing import Any
+
+@@ -19,7 +20,10 @@
+     SCHEMA_CONTRASTIVE_REPORT,
+     SCHEMA_DOMAIN_PATCH,
+ )
+-from ..utils.evolution_trajectory_sanitize import sanitize_raw_result_for_evolution
++from ..utils.evolution_trajectory_sanitize import (
++    compress_retained_evidence,
++    sanitize_raw_result_for_evolution,
++)
+ from ..utils.llm_cost import optimizer_call_report
+ from .elbow_selection import compute_reflection_task_selection
+ from .prompts import (
+@@ -49,6 +53,36 @@
+             lines = lines[:-1]
+         t = "\n".join(lines).strip()
+     return t
++
++
++def _parse_json_object(text: str, *, context: str) -> dict[str, Any]:
++    """Parse a strict JSON object and give retry code a concise diagnostic."""
++    value = json.loads(_strip_json_fence(text))
++    if not isinstance(value, dict):
++        raise ValueError(f"{context} returned {type(value).__name__}; expected a JSON object")
++    return value
++
++
++def _merge_usage_calls(usages: list[dict[str, Any]]) -> dict[str, Any]:
++    """Combine token usage from an initial generation and any JSON repair retries."""
++    totals = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
++    for usage in usages:
++        prompt = int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0)
++        completion = int(
++            usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0
++        )
++        total = int(usage.get("total_tokens", prompt + completion) or 0)
++        totals["prompt_tokens"] += prompt
++        totals["completion_tokens"] += completion
++        totals["total_tokens"] += total
++    return totals
++
++
++def _atomic_json_write(path: Path, payload: dict[str, Any]) -> None:
++    """Durably checkpoint each valid phase-one response before gathering peers."""
++    tmp = path.with_suffix(path.suffix + ".tmp")
++    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
++    os.replace(tmp, path)
+
+
+ def _record_payload(rec: TrajectoryRecord) -> dict[str, Any]:
+@@ -67,6 +101,7 @@
+             raw_result = dict(raw_result)
+             raw_result["simulations"] = scoped
+     raw_result = sanitize_raw_result_for_evolution(rec, raw_result)
++    retained_evidence = compress_retained_evidence(raw_result, record=rec)
+     return {
+         "task_id": rec.task_id,
+         "trajectory_tag": rec.trajectory_tag,
+@@ -75,7 +110,9 @@
+         "score_source": rec.score_source,
+         "log_path": rec.log_path,
+         "raw_result_path": rec.raw_result_path,
+-        "raw_result": raw_result,
++        # The full trace remains on disk; optimizer prompts receive only the
++        # bounded retained-evidence view described by the paper's protocol.
++        "raw_result": retained_evidence,
+         "phase_snapshots": [
+             {"phase": p.phase, "instruction": p.instruction, "output_preview": p.output_preview}
+             for p in rec.phase_snapshots
+@@ -129,7 +166,11 @@
+     patches: list[DomainPatch] = []
+     reports: list[dict[str, Any]] = []
+     usage_reports: list[dict[str, Any]] = []
+-    max_cases = int(max(1, EVOLVE_MAX_REFLECTION_CASES_PER_ROUND))
++    max_cases = (
++        len(by_task)
++        if EVOLVE_MAX_REFLECTION_CASES_PER_ROUND is None
++        else int(max(1, EVOLVE_MAX_REFLECTION_CASES_PER_ROUND))
++    )
+     selected_task_ids = _select_reflection_task_ids(
+         by_task=by_task,
+         max_cases=max_cases,
+@@ -142,6 +183,63 @@
+     client = AsyncOpenAIClient(model=optimizer_model)
+     extras = chat_completion_extras_from_optimizer_llm_args(optimizer_llm_args)
+
++    async def _generate_json_object(
++        *, system_prompt: str, user_prompt: str, context: str
++    ) -> tuple[dict[str, Any], dict[str, Any]]:
++        """Retry malformed structured responses without rerunning valid task analyses."""
++        usages: list[dict[str, Any]] = []
++        repair_context = ""
++        last_error: Exception | None = None
++        for attempt in range(1, 4):
++            try:
++                text, usage = await client.generate(
++                    system_prompt=system_prompt,
++                    user_prompt=user_prompt + repair_context,
++                    **extras,
++                    response_format=_contrastive_json_object_response_format(),
++                )
++            except Exception as exc:
++                name = type(exc).__name__.lower()
++                retryable = any(
++                    marker in name
++                    for marker in ("connection", "timeout", "ratelimit", "internalserver", "serviceunavailable")
++                )
++                if not retryable or attempt >= 3:
++                    raise
++                delay = 5 * (2 ** (attempt - 1))
++                print(
++                    f"[contrastive] {context}: transient API error "
++                    f"(attempt {attempt}/3, retry in {delay}s): {type(exc).__name__}: {exc}",
++                    flush=True,
++                )
++                await asyncio.sleep(delay)
++                continue
++            usages.append(dict(usage or {}))
++            try:
++                payload = _parse_json_object(text, context=context)
++                return payload, _merge_usage_calls(usages)
++            except (json.JSONDecodeError, ValueError) as exc:
++                last_error = exc
++                print(
++                    f"[contrastive] {context}: invalid structured response "
++                    f"(attempt {attempt}/3): {exc}",
++                    flush=True,
++                )
++                if attempt < 3:
++                    # Include the failed response so the model can repair syntax,
++                    # while explicitly preserving its analysis and task context.
++                    failed = (text or "")[:20000]
++                    repair_context = (
++                        "\n\n[RETRY: STRICT JSON REPAIR]\n"
++                        "The previous response was not a valid JSON object. Recreate the same "
++                        "analysis from the task and trajectory data above, preserving its meaning. "
++                        "Return exactly one syntactically valid JSON object, with double-quoted "
++                        "keys and strings, no trailing commas, and no markdown fences or prose.\n"
++                        "Previous invalid response (for repair reference only):\n"
++                        f"{failed}\n"
++                    )
++        raise ValueError(f"{context} failed to produce valid JSON after 3 attempts: {last_error}")
++
+     async def _phase1_one(tid: str) -> tuple[str, dict[str, Any], dict[str, Any], list[dict[str, Any]], int, int]:
+         rows = sorted(by_task.get(tid, []), key=lambda x: x.score)
+         traj_payloads = [_record_payload(r) for r in rows]
+@@ -149,6 +247,14 @@
+         payload_str = json.dumps(wrap, ensure_ascii=False, indent=2)
+         ic = len(payload_str)
+         et = max(1, ic // 4)
++        cached_path = contrastive_dir / f"phase1_{_safe_task_filename(tid)}.json"
++        if cached_path.is_file():
++            try:
++                cached = json.loads(cached_path.read_text(encoding="utf-8"))
++                if isinstance(cached, dict) and str(cached.get("task_id") or "") == str(tid):
++                    return tid, cached, {}, traj_payloads, ic, et
++            except (OSError, TypeError, ValueError, json.JSONDecodeError):
++                pass
+         user = user_contrastive_phase1(
+             task_id=tid,
+             num_rollouts=len(rows),
+@@ -156,14 +262,18 @@
+             input_char_count=ic,
+             estimated_input_tokens=et,
+         )
+-        text, usage = await client.generate(
++        obj, usage = await _generate_json_object(
+             system_prompt=SYS_CONTRASTIVE_PHASE1,
+             user_prompt=user,
+-            **extras,
+-            response_format=_contrastive_json_object_response_format(),
+-        )
+-        obj = json.loads(_strip_json_fence(text))
+-        return tid, obj, dict(usage or {}), traj_payloads, ic, et
++            context=f"phase1 task_id={tid}",
++        )
++        if str(obj.get("task_id") or "") != str(tid):
++            raise ValueError(
++                f"phase1 task_id mismatch: expected {tid!r}, got {obj.get('task_id')!r}"
++            )
++        cached_path.parent.mkdir(parents=True, exist_ok=True)
++        _atomic_json_write(cached_path, obj)
++        return tid, obj, usage, traj_payloads, ic, et
+
+     try:
+         phase1_out = await asyncio.gather(*[_phase1_one(tid) for tid in selected_task_ids])
+@@ -199,7 +309,13 @@
+                 tdesc = str(rr.get("task_description") or "").strip()
+             else:
+                 tdesc = ""
+-            phase1_json_str = json.dumps(obj, ensure_ascii=False, indent=2)
++            # Keep every Phase-1 field while avoiding pretty-print whitespace
++            # that needlessly inflates the single cross-sample context.
++            phase1_json_str = json.dumps(
++                obj,
++                ensure_ascii=False,
++                separators=(",", ":"),
++            )
+             phase2_blocks.append(
+                 f"=== TASK task_id={tid} ===\n"
+                 f"[Original task / instruction]\n{tdesc}\n\n"
+@@ -217,20 +333,18 @@
+             input_char_count=p2_ic,
+             estimated_input_tokens=p2_et,
+         )
+-        text2, usage2 = await client.generate(
++        payload2, usage2 = await _generate_json_object(
+             system_prompt=SYS_CONTRASTIVE_PHASE2,
+             user_prompt=user2,
+-            **extras,
+-            response_format=_contrastive_json_object_response_format(),
++            context="phase2 cross-sample synthesis",
+         )
+         usage_reports.append(
+             optimizer_call_report(
+                 phase="contrastive_reflection_phase2",
+                 model=optimizer_model,
+-                usage=dict(usage2 or {}),
+-            )
+-        )
+-        payload2 = json.loads(_strip_json_fence(text2))
++                usage=usage2,
++            )
++        )
+         synthesis = payload2.get("cross_sample_synthesis") or {}
+         meta = payload2.get("meta_analysis") or {}
+
+@@ -253,7 +367,12 @@
+                 raise ValueError(f"task_id={task_id} has <2 trajectories in by_task")
+             low = rows[0]
+             high = rows[-1]
++            # Some compatible optimizer responses place the patch under the
++            # diagnosis object instead of the documented top-level field.
++            # Accept that shape while preserving the strict non-empty rule.
+             cp = item.get("candidate_patch") or {}
++            if not cp and isinstance(item.get("contrastive_diagnosis"), dict):
++                cp = item["contrastive_diagnosis"].get("candidate_patch") or {}
+             phase_s = str(cp.get("target_phase") or cp.get("phase") or "Phase 1").strip()
+             constraint_s = str(cp.get("constraint_rule") or cp.get("constraint") or "").strip()
+             impl = str(cp.get("implementation_mechanism") or "").strip()
+--- /dev/null
++++ b/evolution/native_eval.py
+@@ -0,0 +1,487 @@
++"""Native benchmark rollout for GAIA/LoCoBench/LOCA/BeyondSWE.
++
++This module keeps native benchmark state in disposable per-task workspaces and
++uses Skill-MAS's existing three-stage build unchanged. It deliberately does
++not import Meta-Team's Runner or any shared evolution registry.
++"""
++
++from __future__ import annotations
++
++import asyncio
++import json
++import os
++import re
++import shutil
++import time
++import uuid
++from functools import partial
++from dataclasses import asdict
++from pathlib import Path
++from typing import Any
++
++from Skill_MAS.bench_adapters import get_adapter
++from Skill_MAS.bench_adapters.base import make_workspace
++from Skill_MAS.bench_adapters.native_runtime import NativeToolRuntime
++from Skill_MAS.skill_mas.build import make_planner_call_fn, make_text_call_fn, run_mas_pipeline_with_retries
++from Skill_MAS.skill_mas.openai_async_client import AsyncOpenAIClient, normalize_usage_tokens
++from Skill_MAS.utils.llm_cost import empty_usage_totals, add_usage_totals, pricing_reference
++
++
++class InfrastructureFailure(RuntimeError):
++    """Fatal benchmark/runtime failure; abort the whole mixed run."""
++
++
++class APICircuitOpen(InfrastructureFailure):
++    """Abort after a sustained upstream API outage."""
++
++
++_NATIVE_TASK_TIMEOUT_S = {
++    "gaia": 900.0,
++    "locobench": 1800.0,
++    "locabench": 7200.0,
++    "beyondswe": 2400.0,
++    "macbench": 7200.0,
++    "masbench": float(os.environ.get("MASBENCH_TASK_TIMEOUT_S", "7200")),
++}
++_TIMEOUT_WAIT_WINDOW_S = 800.0
++
++_API_ERROR_STREAK_LIMIT = 3
++_API_ERROR_MARKERS = (
++    "api error", "apiconnectionerror", "service unavailable", "rate limit",
++    "ratelimit", "http 429", "http 500", "http 502", "http 503",
++    "status code: 429", "status code: 500", "status code: 502", "status code: 503",
++)
++
++
++def _is_api_failure(trace: dict[str, Any]) -> bool:
++    """Classify upstream/provider failures without treating task outcomes as API outages."""
++    if trace.get("failure_stage") == "task_timeout":
++        return False
++    text = " ".join(str(trace.get(k) or "") for k in ("failure_reason", "failure_stage")).lower()
++    return any(marker in text for marker in _API_ERROR_MARKERS)
++
++
++def _task_timeout(bench_backend: str) -> float:
++    key = str(bench_backend or "").strip().lower()
++    for prefix, seconds in _NATIVE_TASK_TIMEOUT_S.items():
++        if key.startswith(prefix):
++            return seconds
++    return 1800.0
++
++
++def _task_wall_timeout(bench_backend: str) -> float:
++    """Wall-clock deadline: effective task budget plus excluded wait window."""
++    return _task_timeout(bench_backend) + _TIMEOUT_WAIT_WINDOW_S
++
++
++def _merge_usage(dst: dict[str, Any], src: dict[str, Any]) -> None:
++    prompt, output, total = normalize_usage_tokens(src)
++    add_usage_totals(dst, {**src, "prompt_tokens": prompt, "output_tokens": output, "total_tokens": total})
++
++
++def _atomic_write_json(path: Path, value: dict[str, Any]) -> None:
++    """Persist one complete trace so interruption cannot leave an empty checkpoint."""
++    path.parent.mkdir(parents=True, exist_ok=True)
++    temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
++    try:
++        with temporary.open("x", encoding="utf-8") as stream:
++            json.dump(value, stream, ensure_ascii=False, indent=2)
++            stream.write("\n")
++            stream.flush()
++            os.fsync(stream.fileno())
++        os.replace(temporary, path)
++    finally:
++        try:
++            temporary.unlink()
++        except FileNotFoundError:
++            pass
++
++
++def _checkpoint_score(trace: dict[str, Any]) -> float | None:
++    """Restore the same zero-score timeout outcome used on the original pass."""
++    if trace.get("failure_stage") == "task_timeout":
++        return 0.0
++    evaluation = trace.get("evaluation") or {}
++    raw_score = evaluation.get("score")
++    return float(raw_score) if raw_score is not None else None
++
++
++class _RecordedClient(AsyncOpenAIClient):
++    """Keep build/repair usage, which the planner callback otherwise discards."""
++
++    def __init__(self, **kwargs):
++        super().__init__(**kwargs)
++        self.calls: list[dict[str, Any]] = []
++
++    async def generate(self, **kwargs):
++        text, usage = await super().generate(**kwargs)
++        self.calls.append(dict(usage))
++        return text, usage
++
++
++def run_native_evaluation_round(
++    *,
++    bench_backend: str,
++    bench_id: str,
++    run_id: str,
++    round_idx: int,
++    task_ids: list[str],
++    agent_llm: str,
++    runs_dir: Path,
++    skills_evolution_dir: Path,
++    jsonl_path: Path | None = None,
++    max_rounds: int = 12,
++    max_concurrency: int = 2,
++    skill_file: Path | None = None,
++    trajectory_tag: str = "",
++    split: str = "test",
++) -> tuple[Path, Path, dict[str, Any]]:
++    adapter = get_adapter(bench_backend)
++    source = Path(jsonl_path).resolve() if jsonl_path is not None and str(jsonl_path) else None
++    tasks = adapter.load_tasks(source, split=split)
++    wanted = {str(t) for t in task_ids}
++    selected = [task for task in tasks if str(task.task_id) in wanted]
++    missing = sorted(wanted - {str(task.task_id) for task in selected})
++    if missing:
++        raise RuntimeError(f"{bench_backend} source missing task ids: {missing[:10]}")
++
++    suffix = f"_{trajectory_tag}" if trajectory_tag else ""
++    root = runs_dir / bench_id / run_id / f"round_{round_idx:02d}" / "bench_rollouts" / f"{bench_backend}_native_r{round_idx:02d}{suffix}"
++    root.mkdir(parents=True, exist_ok=True)
++    trace_dir = root / "process_traces"
++    trace_dir.mkdir(parents=True, exist_ok=True)
++    skill_path = Path(skill_file).resolve() if skill_file is not None else (
++        skills_evolution_dir / bench_id / run_id / f"round_{round_idx:02d}" / "SKILL.md"
++    )
++    if not skill_path.is_file():
++        raise FileNotFoundError(f"Skill workspace missing SKILL.md: {skill_path}")
++
++    # Keep the requested task list separate from the pending subset.  The final
++    # bundle must contain both newly-run rows and rows restored from checkpoints;
++    # otherwise a resume overwrites the previous bundle with only the new rows.
++    requested_tasks = list(selected)
++
++    # Resume safely: every durable evaluation trace is a checkpoint.  A timeout
++    # is a completed attempt by policy and must not be rerun automatically.
++    pending = []
++    for task in selected:
++        checkpoint = trace_dir / f"{task.task_id}.json"
++        try:
++            saved = json.loads(checkpoint.read_text(encoding="utf-8"))
++            if saved.get("failure_stage") == "task_timeout" or (
++                saved.get("evaluation") is not None
++                and saved.get("final_output") is not None
++                and saved.get("success") is True
++            ):
++                continue
++        except Exception:
++            pass
++        pending.append(task)
++    selected = pending
++
++    async def one(task):
++        started_at = time.monotonic()
++        print(f"[task] starting task_id={task.task_id}", flush=True)
++        workspace, context = make_workspace(bench_backend, task)
++        context.update(adapter.prepare_workspace(task, workspace))
++        context["artifact_dir"] = str(root / "task_artifacts" / task.task_id)
++        client = _RecordedClient(model=agent_llm)
++        planner = make_planner_call_fn(client, generation_kwargs={"response_format": {"type": "json_object"}, "temperature": 0.2})
++        text_call = make_text_call_fn(client)
++        runtime = None
++        try:
++            setup_retries = max(0, int(os.environ.get("MAC_BENCH_SETUP_RETRIES", "0")))
++            for attempt in range(setup_retries + 1):
++                try:
++                    runtime = NativeToolRuntime(adapter, task, context, agent_llm)
++                    break
++                except Exception as exc:
++                    message = f"{type(exc).__name__}: {exc}"
++                    transient = ("unable to connect", "failed to fetch", "502 bad gateway",
++                                 "connection reset", "connection refused", "timed out",
++                                 "temporary failure", "failed to install browsers")
++                    retryable = any(marker in message.lower() for marker in transient)
++                    if not retryable or attempt >= setup_retries:
++                        raise InfrastructureFailure(
++                            f"infrastructure failure during {bench_backend} setup for {task.task_id}: {exc}"
++                        ) from exc
++                    delay = min(30, 5 * (attempt + 1))
++                    print(f"[task] setup retry {attempt + 1}/{setup_retries} task_id={task.task_id} "
++                          f"wait={delay}s reason={message[:300]}", flush=True)
++                    await asyncio.sleep(delay)
++            # Some stateful adapters create the authoritative task instruction
++            # while attaching MCP/Docker services, so build the prompt after
++            # runtime setup has completed.
++            prompt = adapter.build_prompt(task, context)
++            result = await run_mas_pipeline_with_retries(
++                task_text=prompt,
++                class_name="Native" + re.sub(r"\W", "_", f"{bench_backend}_{task.task_id}") + "Workflow",
++                init_skill_path=skill_path,
++                planner_call_fn=planner,
++                text_call_fn=text_call,
++                tool_call_fn=partial(runtime.run, max_rounds=max_rounds),
++                dataset_name=bench_backend,
++                max_generation_attempts=6,
++                max_execution_attempts=4,
++            )
++            evaluation = adapter.evaluate(task, result.final_output, context)
++            usage = empty_usage_totals()
++            for call_usage in [*client.calls, *runtime.llm_usage]:
++                _merge_usage(usage, call_usage)
++            trace = {
++                "schema": "skill_mas_native_trace_v1",
++                "bench_backend": bench_backend,
++                "task_id": task.task_id,
++                "split": task.split,
++                "prompt": prompt,
++                "task_description": prompt,
++                "build_stages": [asdict(s) for s in result.artifacts.stage_traces] if result.artifacts else [],
++                "state": result.state,
++                "mas_code": result.mas_code,
++                "success": result.success,
++                "failure_stage": result.failure_stage,
++                "failure_reason": result.failure_reason,
++                "generation_attempts_used": result.generation_attempts_used,
++                "execution_attempts_used": result.execution_attempts_used,
++                "retry_events": result.retry_events,
++                "final_output": result.final_output,
++                "evaluation": {"success": evaluation.success, "score": evaluation.score, "summary": evaluation.summary, "details": evaluation.details},
++                "native_tool_trace": runtime.trace,
++                "usage_totals": usage,
++                "llm_usage": {"build_and_text": client.calls, "native_execution": runtime.llm_usage},
++                "usage_scope": "All returned API usage, including build, repair, and execution; missing provider usage cannot be recovered.",
++                "elapsed_seconds": round(time.monotonic() - started_at, 3),
++                "effective_elapsed_seconds": round(time.monotonic() - started_at, 3),
++            }
++            _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++            print(f"[task] finished task_id={task.task_id} score={evaluation.score} "
++                  f"passed={evaluation.success} elapsed={trace['elapsed_seconds']}s", flush=True)
++            return task.task_id, float(evaluation.score), usage, trace
++        finally:
++            try:
++                if runtime is not None:
++                    await runtime.close()
++            finally:
++                try:
++                    await client.aclose()
++                finally:
++                    adapter.cleanup_workspace(context)
++
++    async def gather_all():
++        if bench_backend == "mixed":
++            rows = []
++            api_error_streak = 0
++            for task in selected:
++                # A native infrastructure failure is a circuit-breaker event:
++                # do not continue consuming API/Docker/MCP resources.
++                try:
++                    task_started_at = time.monotonic()
++                    source_bench = task.raw.get("source_benchmark", bench_backend)
++                    effective_budget = _task_timeout(source_bench)
++                    row = await asyncio.wait_for(one(task), timeout=_task_wall_timeout(source_bench))
++                    rows.append(row)
++                    api_error_streak = api_error_streak + 1 if _is_api_failure(row[3]) else 0
++                    if api_error_streak >= _API_ERROR_STREAK_LIMIT:
++                        raise APICircuitOpen(
++                            f"upstream API circuit opened after {api_error_streak} consecutive API failures; "
++                            f"last task={task.task_id}"
++                        )
++                except asyncio.TimeoutError:
++                    elapsed = round(time.monotonic() - task_started_at, 3)
++                    trace = {
++                        "schema": "skill_mas_native_trace_v1",
++                        "bench_backend": bench_backend,
++                        "task_id": task.task_id,
++                        "split": task.split,
++                        "success": False,
++                        "failure_stage": "task_timeout",
++                        "completion_status": "completed_timeout",
++                        "failure_reason": f"task exceeded effective budget {effective_budget:.0f}s plus wait window {_TIMEOUT_WAIT_WINDOW_S:.0f}s",
++                        "evaluation": {"success": None, "score": None, "summary": "task timeout; score unavailable", "details": {}},
++                        "status": "timeout",
++                        "final_output": "",
++                        "usage_totals": empty_usage_totals(),
++                        "native_tool_trace": [],
++                        "elapsed_seconds": elapsed,
++                        "effective_elapsed_seconds": 0.0,
++                        "elapsed_excluded_reason": "task_timeout_wait",
++                        "effective_budget_seconds": effective_budget,
++                        "wait_window_seconds": _TIMEOUT_WAIT_WINDOW_S,
++                    }
++                    _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++                    rows.append((task.task_id, 0.0, empty_usage_totals(), trace))
++                    # A benchmark timeout is not an upstream API outage.
++                    api_error_streak = 0
++            return rows
++        semaphore = asyncio.Semaphore(max(1, int(max_concurrency)))
++
++        async def bounded(task):
++            started_at = time.monotonic()
++            async with semaphore:
++                try:
++                    return await asyncio.wait_for(one(task), timeout=_task_wall_timeout(bench_backend))
++                except asyncio.TimeoutError:
++                    # A task timeout is an ordinary benchmark outcome. Persist it
++                    # as a checkpoint and let the remaining tasks continue.
++                    effective_budget = _task_timeout(bench_backend)
++                    trace = {
++                        "schema": "skill_mas_native_trace_v1",
++                        "bench_backend": bench_backend,
++                        "task_id": task.task_id,
++                        "split": task.split,
++                        "success": False,
++                        "failure_stage": "task_timeout",
++                        "completion_status": "completed_timeout",
++                        "failure_reason": f"task exceeded effective budget {effective_budget:.0f}s plus wait window {_TIMEOUT_WAIT_WINDOW_S:.0f}s",
++                        "evaluation": {"success": None, "score": None, "summary": "task timeout; score unavailable", "details": {}},
++                        "status": "timeout",
++                        "final_output": "",
++                        "usage_totals": empty_usage_totals(),
++                        "native_tool_trace": [],
++                        "elapsed_seconds": effective_budget + _TIMEOUT_WAIT_WINDOW_S,
++                        "effective_elapsed_seconds": 0.0,
++                        "elapsed_excluded_reason": "task_timeout_wait",
++                        "effective_budget_seconds": effective_budget,
++                        "wait_window_seconds": _TIMEOUT_WAIT_WINDOW_S,
++                    }
++                    _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++                    # Include timeout as a zero-valued outcome in aggregate
++                    # scoring while keeping score=None in the durable trace.
++                    return task.task_id, 0.0, empty_usage_totals(), trace
++                except InfrastructureFailure as exc:
++                    # A single BeyondSWE repository/image can be unavailable
++                    # (for example a missing Docker image or a failed git
++                    # repack). Record it and keep the other repositories moving.
++                    # It remains retryable on a later resume because this
++                    # checkpoint is intentionally not treated as completed.
++                    trace = {
++                        "schema": "skill_mas_native_trace_v1",
++                        "bench_backend": bench_backend,
++                        "task_id": task.task_id,
++                        "split": task.split,
++                        "success": False,
++                        "failure_stage": "infrastructure_failure",
++                        "completion_status": "skipped_infrastructure_failure",
++                        "failure_reason": str(exc),
++                        "evaluation": {"success": None, "score": None, "summary": "infrastructure failure; retryable", "details": {}},
++                        "status": "infrastructure_failure",
++                        "final_output": "",
++                        "usage_totals": empty_usage_totals(),
++                        "native_tool_trace": [],
++                        "elapsed_seconds": round(time.monotonic() - started_at, 3),
++                        "effective_elapsed_seconds": 0.0,
++                    }
++                    _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++                    print(f"[task] infrastructure failure task_id={task.task_id}: {str(exc)[:400]}", flush=True)
++                    return task.task_id, 0.0, empty_usage_totals(), trace
++
++                except OSError as exc:
++                    # Local disk/Docker socket failures are retryable setup
++                    # failures, never benchmark scores or model generations.
++                    trace = {
++                        "schema": "skill_mas_native_trace_v1",
++                        "bench_backend": bench_backend,
++                        "task_id": task.task_id,
++                        "split": task.split,
++                        "success": False,
++                        "failure_stage": "infrastructure_failure",
++                        "completion_status": "skipped_infrastructure_failure",
++                        "failure_reason": f"local I/O failure: {type(exc).__name__}: {exc}",
++                        "evaluation": {"success": None, "score": None, "summary": "local I/O failure; retryable", "details": {}},
++                        "status": "infrastructure_failure",
++                        "final_output": "",
++                        "usage_totals": empty_usage_totals(),
++                        "native_tool_trace": [],
++                        "elapsed_seconds": round(time.monotonic() - started_at, 3),
++                        "effective_elapsed_seconds": 0.0,
++                    }
++                    _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++                    return task.task_id, 0.0, empty_usage_totals(), trace
++
++                except Exception as exc:
++                    # Persist generation/API/evaluation failures and continue;
++                    # a later resume will retry them because only success and
++                    # timeout checkpoints are terminal.
++                    trace = {
++                        "schema": "skill_mas_native_trace_v1",
++                        "bench_backend": bench_backend,
++                        "task_id": task.task_id,
++                        "split": task.split,
++                        "success": False,
++                        "failure_stage": "generation",
++                        "completion_status": "completed_failure",
++                        "failure_reason": f"{type(exc).__name__}: {exc}",
++                        "evaluation": {"success": None, "score": None, "summary": "generation failure; retryable", "details": {}},
++                        "status": "generation_failure",
++                        "final_output": "",
++                        "usage_totals": empty_usage_totals(),
++                        "native_tool_trace": [],
++                        "elapsed_seconds": round(time.monotonic() - started_at, 3),
++                        "effective_elapsed_seconds": round(time.monotonic() - started_at, 3),
++                    }
++                    _atomic_write_json(trace_dir / f"{task.task_id}.json", trace)
++                    return task.task_id, 0.0, empty_usage_totals(), trace
++
++        if bench_backend == "macbench" and int(max_concurrency) == 1:
++            rows = []
++            minimum_free = float(os.environ.get("SKILL_MAS_MIN_FREE_GB", "0"))
++            for task in selected:
++                free_gb = shutil.disk_usage(trace_dir).free / (1024 ** 3)
++                if free_gb < minimum_free:
++                    raise RuntimeError(f"Storage guard: only {free_gb:.1f} GiB free; "
++                                       f"need {minimum_free:.1f} GiB before {task.task_id}")
++                row = await bounded(task)
++                rows.append(row)
++                reason = str(row[3].get("failure_reason") or "").lower()
++                if "input/output error" in reason or "no space left on device" in reason:
++                    raise InfrastructureFailure(f"Local storage failure; stopping before the next task: {reason}")
++            return rows
++        return await asyncio.gather(*(bounded(task) for task in selected))
++
++    rows = asyncio.run(gather_all())
++
++    # Rehydrate completed checkpoint rows omitted from ``pending``.  This makes
++    # the aggregate bundle idempotent across interrupted/resumed executions.
++    rows_by_task = {str(tid): (tid, score, usage, trace) for tid, score, usage, trace in rows}
++    for task in requested_tasks:
++        tid_s = str(task.task_id)
++        if tid_s in rows_by_task:
++            continue
++        checkpoint = trace_dir / f"{tid_s}.json"
++        try:
++            trace = json.loads(checkpoint.read_text(encoding="utf-8"))
++            score = _checkpoint_score(trace)
++            usage = trace.get("usage_totals") or empty_usage_totals()
++            rows_by_task[tid_s] = (tid_s, score, usage, trace)
++        except (OSError, TypeError, ValueError, json.JSONDecodeError):
++            # A malformed/incomplete checkpoint remains absent and is visible as
++            # missing from the bundle instead of silently becoming score 0.
++            continue
++    rows = [rows_by_task[str(task.task_id)] for task in requested_tasks if str(task.task_id) in rows_by_task]
++    aggregate = empty_usage_totals()
++    scores: dict[str, float] = {}
++    per_task: list[dict[str, Any]] = []
++    for tid, score, usage, trace in rows:
++        scores[str(tid)] = score
++        _merge_usage(aggregate, usage)
++        per_task.append({"task_id": str(tid), "score": score, "status": trace.get("status", "completed"), **usage})
++    timeout_count = sum(1 for _, _, _, trace in rows if trace.get("failure_stage") == "task_timeout")
++    bundle = {"bench_backend": bench_backend, "round_idx": round_idx, "bench_id": bench_id, "run_id": run_id, "task_ids": [str(t.task_id) for t in requested_tasks], "process_trace_dir": str(trace_dir.resolve()), "merged_skill_dir": str(skill_path.parent.resolve()), "per_task_scores": scores, "timeout_count": timeout_count}
++    bundle_path = root / f"{bench_backend}_native_bundle_r{round_idx:02d}.json"
++    _atomic_write_json(bundle_path, bundle)
++    section = {"phase": "native_skill_mas_rollout", "description": f"Skill-MAS native {bench_backend} rollout", "model": agent_llm, "aggregate_usage": aggregate, "per_task": per_task, "pricing_reference": pricing_reference()}
++    return bundle_path, root, section
++
++
++def _collect_state_usage(state: dict[str, Any]) -> dict[str, Any]:
++    total = empty_usage_totals()
++    seen: set[int] = set()
++    for key, value in (state or {}).items():
++        if not str(key).startswith("usage_") or not isinstance(value, dict):
++            continue
++        marker = id(value)
++        if marker in seen:
++            continue
++        seen.add(marker)
++        add_usage_totals(total, value)
++    return total
+--- a/evolution/rollout_multi.py
++++ b/evolution/rollout_multi.py
+@@ -23,15 +23,6 @@
+     SCHEMA_TRAJECTORY_RECORD,
+     merged_workspaces_dir,
+     skills_evolution_dir,
+-)
+-from .bench_eval import (
+-    _drb_cached_rollout_complete,
+-    _sanitize_model_tag,
+-    reset_drb_bench_rollout_resume_counter,
+-    run_bcp_evaluation_round,
+-    run_drb_evaluation_round,
+-    run_hlemath_evaluation_round,
+-    take_drb_bench_rollout_resume_count,
+ )
+ from ..utils.llm_cost import vita_rollout_cost_report
+ from ..utils.traces import summarize_drb_round, summarize_run
+@@ -571,9 +562,22 @@
+     bcp_retrieval_topk: int = 5,
+     bcp_doc_max_tokens: int = 512,
+     bcp_max_retrieval_rounds: int = 10,
++    native_jsonl_path: Path | None = None,
++    native_split: str = "test",
+ ) -> tuple[dict[str, list[TrajectoryRecord]], list[dict[str, Any]], Path]:
+     """Execute Step 1 and persist trajectory/aspect artifacts for this round."""
+     bb = (bench_backend or "vitabench").strip().lower()
++    native_backends = {"gaia", "locobench_fi", "locobench_cr", "loca", "beyondswe_depmigrate", "beyondswe_crossrepo", "mixed", "masbench", "macbench"}
++    if bb not in native_backends:
++        from .bench_eval import (
++            _drb_cached_rollout_complete,
++            _sanitize_model_tag,
++            reset_drb_bench_rollout_resume_counter,
++            run_bcp_evaluation_round,
++            run_drb_evaluation_round,
++            run_hlemath_evaluation_round,
++            take_drb_bench_rollout_resume_count,
++        )
+     bcp_judge_model = (bcp_judge_llm or "").strip() or None
+     round_root = _round_root(runs_dir=runs_dir, bench_id=bench_id, run_id=run_id, round_idx=round_idx)
+     traj_root = round_root / ROUND_TRAJECTORIES_DIRNAME
+@@ -825,6 +829,63 @@
+                             ),
+                             encoding="utf-8",
+                         )
++        return by_task, eval_sections, round_root
++
++    if bb in native_backends:
++        from .native_eval import run_native_evaluation_round
++
++        for k in range(int(max(1, k_trajectories))):
++            traj_tag = f"traj_{k:02d}"
++            bundle_path, native_root, section = run_native_evaluation_round(
++                bench_backend=bb,
++                bench_id=bench_id,
++                run_id=run_id,
++                round_idx=round_idx,
++                task_ids=normalized_task_ids,
++                agent_llm=agent_llm,
++                runs_dir=runs_dir,
++                skills_evolution_dir=skills_evolution_dir(bb, agent_llm),
++                jsonl_path=native_jsonl_path,
++                max_concurrency=max(1, int(max_concurrency)),
++                split=native_split,
++                trajectory_tag=traj_tag,
++            )
++            eval_sections.append(section)
++            bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
++            trace_dir = Path(bundle["process_trace_dir"])
++            for tid_s in normalized_task_ids:
++                trace_path = trace_dir / f"{tid_s}.json"
++                trace = json.loads(trace_path.read_text(encoding="utf-8")) if trace_path.is_file() else {}
++                score_value = (bundle.get("per_task_scores") or {}).get(str(tid_s))
++                # Resumed native bundles can legitimately omit a task when an
++                # older run wrote only the newly completed rows.  Prefer the
++                # durable process trace before treating a score as unavailable;
++                # silently defaulting to 0 corrupts elbow selection.
++                if score_value is None:
++                    evaluation = trace.get("evaluation") or {}
++                    score_value = evaluation.get("score")
++                if score_value is None:
++                    raise RuntimeError(
++                        f"native rollout missing score for task_id={tid_s} "
++                        f"trajectory_idx={k}; bundle={bundle_path} trace={trace_path}"
++                    )
++                score = float(score_value)
++                record = TrajectoryRecord(
++                    schema=SCHEMA_TRAJECTORY_RECORD,
++                    bench_backend=bb,
++                    round_idx=round_idx,
++                    task_id=str(tid_s),
++                    trajectory_idx=k,
++                    trajectory_tag=f"task_{tid_s}_traj_{k:02d}",
++                    score=score,
++                    score_source=f"{bb}_native_evaluator",
++                    log_path=str(trace_path.resolve()),
++                    raw_result_path=str(trace_path.resolve()),
++                    phase_snapshots=[],
++                    metadata={"temperature": rollout_agent_temperature, "native_trace": trace.get("native_tool_trace", [])},
++                )
++                by_task[str(tid_s)].append(record)
++                _persist_non_vita_trajectory_record(record, traj_root, asp_root)
+         return by_task, eval_sections, round_root
+
+     if bb in ("hlemath", "bcp", "drb"):
+@@ -1252,4 +1313,3 @@
+             raise ValueError(f"Unknown bench_backend for rollout: {bb!r}")
+
+     return by_task, eval_sections, round_root
+-
+--- a/skill_mas/__init__.py
++++ b/skill_mas/__init__.py
+@@ -1,6 +1,14 @@
+-"""Unified Skill_MAS pipeline builders."""
++"""Unified Skill_MAS pipeline builders.
+
+-from .openai_async_client import AsyncOpenAIClient
++The client is loaded lazily so dataset discovery and static CLI commands do
++not require the optional HTTP/OpenAI runtime dependencies.
++"""
+
+ __all__ = ["AsyncOpenAIClient"]
+
++
++def __getattr__(name: str):
++    if name == "AsyncOpenAIClient":
++        from .openai_async_client import AsyncOpenAIClient
++        return AsyncOpenAIClient
++    raise AttributeError(name)
+--- a/skill_mas/build.py
++++ b/skill_mas/build.py
+@@ -91,7 +91,7 @@
+ AsyncToolCallFn = Callable[[Any], Awaitable[tuple[str, dict[str, Any]]]]
+ SyncToolCallFn = Callable[[Any], tuple[str, dict[str, Any]]]
+
+-TOOL_EXECUTION_MODES = ("llm_only", "multi_turn_search", "vita_tool")
++TOOL_EXECUTION_MODES = ("llm_only", "multi_turn_search", "vita_tool", "native_tool")
+
+ # When Stage-2 omits user_prompt, use a short embed-safe default (full task is in GLOBAL TASK CONTEXT at runtime).
+ _RUNTIME_USER_PROMPT_FALLBACK = (
+@@ -138,9 +138,24 @@
+         return "bcp"
+     if s in {"vita", "vitabench"}:
+         return "vita"
++    if s in {"gaia", "gaia_test", "gaia_train"}:
++        return "gaia"
++    if s in {"locobench", "locobench_fi", "locobench_cr"}:
++        return s
++    if s in {"mixed", "mix", "mix_coop", "mixed_native"}:
++        return "mixed"
++    if s in {"loca", "loca_bench", "loca-bench"}:
++        return "loca"
++    if s == "masbench":
++        return "masbench"
++    if s in {"macbench", "mac_bench", "mac-bench"}:
++        return "macbench"
++    if s in {"beyondswe", "beyondswe_depmigrate", "beyondswe_crossrepo", "depmigrate", "crossrepo"}:
++        return s
+     raise ValueError(
+         "Unsupported dataset_name. Expected one of: "
+-        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench; "
++        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench, "
++        "gaia, locobench_fi|locobench_cr, loca, beyondswe_depmigrate|beyondswe_crossrepo; "
+         f"got {dataset_name!r}"
+     )
+
+@@ -183,6 +198,44 @@
+             "Never assign a sub-agent instructions that forbid booking or purchasing when the task requires a "
+             "completed transaction. Names like *_search only are discouraged when the rubric expects a "
+             "completed purchase or reservation — prefer sub-task intents that match **done** actions."
++        )
++    if d == "gaia":
++        return (
++            "GAIA: solve the question using the prompt, attached files, and permitted native tools when needed. "
++            "The final deliverable is one concise answer line prefixed exactly with `FINAL ANSWER:`; do not emit "
++            "planning commentary or multiple candidate answers."
++        )
++    if d in {"locobench", "locobench_fi", "locobench_cr"}:
++        return (
++            "LoCoBench: inspect the supplied repository context, implement the requested change in the workspace, "
++            "and run relevant checks. The evaluator scores the resulting workspace and solution files, so the final "
++            "agent must complete edits and verification rather than only describe a proposed patch."
++        )
++    if d == "mixed":
++        return (
++            "Mixed native benchmark task: use the task-specific native tools and workspace "
++            "provided by the routed adapter. Complete the task and satisfy its native evaluator; "
++            "do not assume a text-only answer contract."
++        )
++    if d == "loca":
++        return (
++            "LOCA-Bench: perform the requested stateful task through the provided native MCP tools and workspace "
++            "files. The evaluator scores the simulator's final state after completion, so the workflow must execute "
++            "all required mutations and verify the state before the final response."
++        )
++    if d == "masbench":
++        return "MASBench: preserve exact actor role_names, use private scoped tools and explicit messages. Game requires repeated simultaneous action rounds, up to 50. Do not access source data or answers. Preserve SkillMAS planning and workflow generation."
++    if d == "macbench":
++        return (
++            "MAC-Bench: complete the requested collaboration task through the provided task tools and shared "
++            "workspace. The evaluator scores the final application or repository state, so perform all required "
++            "mutations and verify the resulting state before the final response."
++        )
++    if d in {"beyondswe", "beyondswe_depmigrate", "beyondswe_crossrepo", "depmigrate", "crossrepo"}:
++        return (
++            "BeyondSWE: inspect and edit the provided repository through native Docker tools, run focused tests, "
++            "and leave a minimal working patch in the container. The evaluator scores the repository patch and its "
++            "tests, so a prose-only answer is insufficient."
+         )
+     raise ValueError(
+         "Dataset not specified or generic: infer the intended deliverable and evaluation style from "
+@@ -377,9 +430,11 @@
+         return {"multi_turn_search"}
+     if dataset_name == "vita":
+         return {"vita_tool"}
++    if dataset_name in {"gaia", "locobench", "locobench_fi", "locobench_cr", "loca", "beyondswe", "beyondswe_depmigrate", "beyondswe_crossrepo", "depmigrate", "crossrepo", "mixed", "masbench", "macbench"}:
++        return {"native_tool"}
+     raise ValueError(
+         "Unsupported dataset_name. Expected one of: "
+-        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench; "
++        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench, native benchmark backends; "
+         f"got {dataset_name!r}"
+     )
+
+@@ -436,6 +491,11 @@
+         for wrong in ("llm_only", "vita_tool"):
+             out = out.replace(f'"execution_mode": "{wrong}"', '"execution_mode": "multi_turn_search"')
+             out = out.replace(f"'execution_mode': '{wrong}'", "'execution_mode': 'multi_turn_search'")
++        return out
++    if only == "native_tool":
++        for wrong in ("llm_only", "multi_turn_search", "vita_tool"):
++            out = out.replace(f'"execution_mode": "{wrong}"', '"execution_mode": "native_tool"')
++            out = out.replace(f"'execution_mode': '{wrong}'", "'execution_mode': 'native_tool'")
+         return out
+     return out
+
+@@ -2399,4 +2459,3 @@
+
+ if __name__ == "__main__":
+     asyncio.run(_main())
+-
+--- a/skill_mas/openai_async_client.py
++++ b/skill_mas/openai_async_client.py
+@@ -234,10 +234,26 @@
+
+         raw_key = api_key or (row.get("api_key") if isinstance(row, dict) else None)
+         self.api_key = _resolve_api_key(str(raw_key) if raw_key is not None else None)
+-        self.base_url = base_url or (row.get("base_url") if isinstance(row, dict) else None)
++        # An explicitly selected experiment env file controls the provider
++        # endpoint, just as it controls the API key. This keeps gaia.env,
++        # beyond.env, and yingji.env isolated when runs are launched separately.
++        self.base_url = (
++            base_url
++            or os.environ.get("OPENAI_BASE_URL")
++            or os.environ.get("DEV_API_BASE")
++            or (row.get("base_url") if isinstance(row, dict) else None)
++        )
+         self.reasoning_effort = row.get("reasoning_effort") if isinstance(row, dict) else None
+         self.temperature = row.get("temperature") if isinstance(row, dict) else None
+         self.max_tokens = row.get("max_tokens") if isinstance(row, dict) else None
++        # Optional smoke/CI guard. Formal experiments keep model_config.json's
++        # value; a lower cap makes connectivity checks finish predictably.
++        env_max_tokens = os.environ.get("SKILL_MAS_MAX_TOKENS", "").strip()
++        if env_max_tokens:
++            try:
++                self.max_tokens = max(1, int(env_max_tokens))
++            except ValueError:
++                pass
+         eb = row.get("extra_body") if isinstance(row, dict) else None
+         self.extra_body: dict[str, Any] | None = eb if isinstance(eb, dict) else None
+
+@@ -247,11 +263,17 @@
+             read=_DEFAULT_READ_TIMEOUT,
+             write=_DEFAULT_CONNECT_TIMEOUT,
+         )
++        # Formal runs may execute in Terminal.app on hosts with a malformed system
++        # proxy URL.  Allow the experiment launcher to force direct transport while
++        # preserving the SDK default for existing callers.
++        trust_env = os.environ.get("SKILL_MAS_TRUST_ENV", "1").strip().lower() not in {"0", "false", "no"}
++        http_client = httpx.AsyncClient(trust_env=trust_env, timeout=_timeout)
+         self.client = AsyncOpenAI(
+             api_key=self.api_key,
+             base_url=self.base_url,
+             timeout=_timeout,
+             max_retries=5,
++            http_client=http_client,
+         )
+         has_model_pricing = isinstance(row, dict) and (
+             ("input_per_1m" in row and "output_per_1m" in row)
+@@ -300,6 +322,57 @@
+         usage = enrich_usage_with_cost(usage, model=self.model, table=self.pricing)
+         return text, usage
+
++    async def generate_with_tools(
++        self,
++        *,
++        user_prompt: str,
++        tools: list[dict[str, Any]],
++        messages: list[dict[str, Any]] | None = None,
++        system_prompt: str = "",
++        **create_kwargs: Any,
++    ) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
++        """Run one OpenAI-compatible tool-call turn.
++
++        The normal ``generate`` path deliberately returns text only because
++        Skill-MAS planning does not use tools. Native benchmark execution
++        needs the raw function calls, so this small opt-in method exposes them
++        without changing the existing planner/text API.
++        """
++        msg_list = list(messages or [])
++        if not msg_list:
++            if system_prompt:
++                msg_list.append({"role": "system", "content": system_prompt})
++            msg_list.append({"role": "user", "content": user_prompt})
++        kwargs: dict[str, Any] = {
++            "model": self.model,
++            "messages": msg_list,
++            "tools": tools,
++            "tool_choice": create_kwargs.pop("tool_choice", "auto"),
++            "temperature": self.temperature,
++            "max_tokens": self.max_tokens,
++            **({"reasoning_effort": self.reasoning_effort} if self.reasoning_effort else {}),
++            **create_kwargs,
++        }
++        merged_extra: dict[str, Any] = dict(self.extra_body or {})
++        call_extra = kwargs.pop("extra_body", None)
++        if isinstance(call_extra, dict):
++            merged_extra.update(call_extra)
++        if merged_extra:
++            kwargs["extra_body"] = merged_extra
++        response = await self.client.chat.completions.create(**kwargs)
++        msg = response.choices[0].message
++        text = structured_json_candidate_text(msg)
++        calls: list[dict[str, Any]] = []
++        for call in list(getattr(msg, "tool_calls", None) or []):
++            fn = getattr(call, "function", None)
++            calls.append({
++                "id": str(getattr(call, "id", "")),
++                "name": str(getattr(fn, "name", "")),
++                "arguments": str(getattr(fn, "arguments", "{}")),
++            })
++        usage = enrich_usage_with_cost(_usage_dict_from_chat_completion(response), model=self.model, table=self.pricing)
++        return text, calls, usage
++
+     async def aclose(self) -> None:
+         closer = getattr(self.client, "close", None)
+         if closer is None:
+@@ -307,4 +380,3 @@
+         res = closer()
+         if hasattr(res, "__await__"):
+             await res  # type: ignore[misc]
+-
+--- a/template/sub_agent.py
++++ b/template/sub_agent.py
+@@ -196,6 +196,34 @@
+                 usage=merged,
+                 request_payload=request_payload,
+             )
++        elif str(tc.get("execution_mode", "")).strip().lower() == "native_tool" and tool_call_fn is not None:
++            # Native benchmark bridge. The bridge owns the benchmark-specific
++            # tool schemas, workspace, stateful services, and evaluator. It
++            # receives a structured payload so it can preserve role and task
++            # context while running an arbitrary number of tool turns.
++            native_payload = {
++                "role_name": self.role_name,
++                "role_instruction": self.role_instruction,
++                "task_input": active_user_prompt,
++                "prompt": (
++                    f"[Sub-agent role]\n{self.role_name}\n\n"
++                    f"[Sub-task instruction]\n{self.role_instruction}\n\n"
++                    f"[Task input]\n{active_user_prompt}"
++                ),
++            }
++            try:
++                native_ret = tool_call_fn(native_payload)
++            except TypeError:
++                native_ret = tool_call_fn(native_payload["prompt"])
++            if inspect.isawaitable(native_ret):
++                text, native_usage = await native_ret
++            else:
++                text, native_usage = await asyncio.to_thread(tool_call_fn, native_payload)
++            return SubAgentResult(
++                text=str(text or "").strip(),
++                usage=native_usage or {},
++                request_payload=request_payload,
++            )
+         elif str(tc.get("execution_mode", "")).strip().lower() == "vita_tool" and tool_call_fn is not None:
+             # ── VitaBench two-phase execution ──
+             # Phase 1 (Reasoning): Use text_call_fn (no tools) to first understand the sub-task,
+@@ -306,4 +334,4 @@
+ class SubAgentResult:
+     text: str
+     usage: dict[str, Any]
+-    request_payload: dict[str, Any]
+\ No newline at end of file
++    request_payload: dict[str, Any]
+--- a/utils/config.py
++++ b/utils/config.py
+@@ -36,6 +36,13 @@
+ BENCH_SEGMENT_DRB = "drb"
+ BENCH_SEGMENT_HLEMATH = "hlemath"
+ BENCH_SEGMENT_BCP = "bcp"
++BENCH_SEGMENT_GAIA = "gaia"
++BENCH_SEGMENT_LOCOBENCH_FI = "locobench_fi"
++BENCH_SEGMENT_LOCOBENCH_CR = "locobench_cr"
++BENCH_SEGMENT_LOCA = "loca"
++BENCH_SEGMENT_BEYONDSWE_DEPMIGRATE = "beyondswe_depmigrate"
++BENCH_SEGMENT_BEYONDSWE_CROSSREPO = "beyondswe_crossrepo"
++BENCH_SEGMENT_MIXED = "mixed"
+
+
+ def sanitize_agent_llm_for_path(raw: str | None) -> str:
+@@ -63,6 +70,15 @@
+         BENCH_SEGMENT_DRB: BENCH_SEGMENT_DRB,
+         BENCH_SEGMENT_HLEMATH: BENCH_SEGMENT_HLEMATH,
+         BENCH_SEGMENT_BCP: BENCH_SEGMENT_BCP,
++        BENCH_SEGMENT_GAIA: BENCH_SEGMENT_GAIA,
++        BENCH_SEGMENT_LOCOBENCH_FI: BENCH_SEGMENT_LOCOBENCH_FI,
++        BENCH_SEGMENT_LOCOBENCH_CR: BENCH_SEGMENT_LOCOBENCH_CR,
++        BENCH_SEGMENT_LOCA: BENCH_SEGMENT_LOCA,
++        BENCH_SEGMENT_BEYONDSWE_DEPMIGRATE: BENCH_SEGMENT_BEYONDSWE_DEPMIGRATE,
++        BENCH_SEGMENT_BEYONDSWE_CROSSREPO: BENCH_SEGMENT_BEYONDSWE_CROSSREPO,
++        BENCH_SEGMENT_MIXED: BENCH_SEGMENT_MIXED,
++        "masbench": "masbench",
++        "macbench": "macbench",
+     }
+     return mapping.get(bb, BENCH_SEGMENT_VITABENCH)
+
+@@ -95,14 +111,14 @@
+ DEFAULT_RUN_ID = "exp1"
+ DEFAULT_VAL_SIZE = 32
+ DEFAULT_EVOLVE_ROUNDS = 10
+-DEFAULT_AGENT_LLM = "qwen3.5-plus"
+-DEFAULT_OPTIMIZER_LLM = "qwen3.5-plus"
++DEFAULT_AGENT_LLM = "gpt-5.6-luna"
++DEFAULT_OPTIMIZER_LLM = "gpt-5.6-luna"
+ DEFAULT_MAX_CONCURRENCY = 16
+ DEFAULT_FRESH = False
+
+ DEFAULT_DOMAIN = "delivery,instore,ota"
+-DEFAULT_USER_LLM = "qwen3.5-plus"
+-DEFAULT_EVALUATOR_LLM = "qwen3-max"
++DEFAULT_USER_LLM = "gpt-5.6-luna"
++DEFAULT_EVALUATOR_LLM = "gpt-5.6-luna"
+ DEFAULT_MAX_STEPS = 300
+ DEFAULT_LANGUAGE = "chinese"
+ os.environ["DRB_RACE_MODEL"] = DEFAULT_EVALUATOR_LLM
+@@ -126,7 +142,9 @@
+ VITA_VALIDATE_JSON = VITABENCH_ROOT / "data" / "vita_validate.json"
+
+ EVOLVE_K_TRAJECTORIES = 5
+-EVOLVE_MAX_REFLECTION_CASES_PER_ROUND = 128
++# No project-side reflection cap. The elbow method determines the cut; when
++# this is None, all tasks before the elbow are retained.
++EVOLVE_MAX_REFLECTION_CASES_PER_ROUND: int | None = None
+
+ ROUND_TRAJECTORIES_DIRNAME = "trajectories"
+ ROUND_ASPECTS_DIRNAME = "aspects"
+--- a/utils/evolution_trajectory_sanitize.py
++++ b/utils/evolution_trajectory_sanitize.py
+@@ -22,6 +22,7 @@
+ string is head/tail folded (64 words per side by default, middle ``【Intermediate Reasoning】``).
+ ``task_info`` / ``task_text`` stay full. Disk ``workflow_state.json`` is unchanged.
+
++
+ """
+
+ from __future__ import annotations
+@@ -41,8 +42,46 @@
+     compress_vitabench_raw_for_llm,
+     placeholder_for_result_preview,
+ )
++# Keep this summary local. Older checkouts may expose ``utils.traces`` without
++# the native wrapper, and evolution must remain resumable across that boundary.
++def summarize_native_trace(traces: Any) -> dict[str, Any] | None:
++    if not isinstance(traces, list):
++        return None
++    names: dict[str, int] = {}
++    for item in traces:
++        if isinstance(item, dict):
++            name = str(item.get("tool_name") or item.get("name") or "unknown")
++            names[name] = names.get(name, 0) + 1
++    return {
++        "total_entries": len(traces),
++        "tool_name_counts": dict(sorted(names.items(), key=lambda kv: (-kv[1], kv[0]))[:16]),
++        "tail_preview": [str(item)[:1200] for item in traces[-8:]],
++    }
+
+ SCHEMA_EVOLUTION_VIEW = "skill_mas_evolution_trajectory_view_v1"
++SCHEMA_RETAINED_EVIDENCE = "skill_mas_retained_evidence_v1"
++
++# The paper exposes a retained-evidence contract, but not its internal
++# compressor. Keep the optimizer view bounded while preserving the evidence
++# needed to compare two trajectories for the same task.
++_RETAINED_EVIDENCE_MAX_CHARS = 12_000
++_EVIDENCE_TEXT_MAX_CHARS = 1_200
++
++# Native adapters share the same trace contract and are routed through one
++# evolution view.  The set is intentionally only a backend dispatch table;
++# compression policies remain the repository helpers below.
++_NATIVE_EVOLUTION_BACKENDS = frozenset(
++    {
++        "gaia",
++        "locobench_fi",
++        "locobench_cr",
++        "loca",
++        "beyondswe_depmigrate",
++        "beyondswe_crossrepo",
++        "mixed",
++        "masbench",
++    }
++)
+
+ # HLEMath / DRB: shorten per-agent outputs (workflow_state ``out_*``) for contrastive / bank LLMs only.
+ _EVOLUTION_WS_HEAD_WORDS = 64
+@@ -93,6 +132,83 @@
+     return mas_code[line_start:]
+
+
++def _bounded_text(value: Any, limit: int = _EVIDENCE_TEXT_MAX_CHARS) -> str:
++    text = str(value or "").strip()
++    if len(text) <= limit:
++        return text
++    head = max(1, limit * 2 // 3)
++    tail = max(1, limit - head)
++    return f"{text[:head]}\n[...compressed...]\n{text[-tail:]}"
++
++
++def compress_retained_evidence(raw_view: Any, *, record: Any) -> dict[str, Any]:
++    """Approximate the paper's Retain(T) contract for optimizer prompts.
++
++    This is deliberately evidence-oriented rather than a raw trace dump:
++    retain outcome, failure/near-miss signals, stage decisions, verification,
++    and compact tool evidence; omit full generated code and repeated logs.
++    """
++    view = raw_view if isinstance(raw_view, dict) else {}
++    score = float(getattr(record, "score", 0.0) or 0.0)
++    success = view.get("success")
++    if success is None:
++        success = score > 0.0
++    failure_stage = str(view.get("failure_stage") or "").strip()
++    failure_reason = _bounded_text(view.get("failure_reason"))
++    timed_out = failure_stage == "task_timeout" or view.get("completion_status") == "completed_timeout"
++    stages = view.get("skill_mas_build_stages")
++    compact_stages: list[dict[str, Any]] = []
++    if isinstance(stages, list):
++        for item in stages[:3]:
++            if not isinstance(item, dict):
++                continue
++            compact_stages.append(
++                {
++                    "stage": item.get("stage") or item.get("stage_name"),
++                    "instruction": _bounded_text(item.get("instruction"), 500),
++                    "output": _bounded_text(item.get("output_preview") or item.get("output"), 900),
++                }
++            )
++    tool_summary = view.get("native_tool_trace_summary") or view.get("tool_trace_summary")
++    evaluation = view.get("evaluation") if isinstance(view.get("evaluation"), dict) else {}
++    final_output = _bounded_text(view.get("final_output"), 1_000)
++    if timed_out:
++        evidence_class = "timeout"
++    elif not bool(success) and (compact_stages or tool_summary or final_output):
++        evidence_class = "diagnosable_failure_or_near_miss"
++    elif bool(success) and (compact_stages or tool_summary):
++        evidence_class = "reusable_success"
++    else:
++        evidence_class = "ordinary_outcome"
++    evidence = {
++        "schema": SCHEMA_RETAINED_EVIDENCE,
++        "task_id": str(view.get("task_id") or getattr(record, "task_id", "")),
++        "bench_backend": str(view.get("bench_backend") or getattr(record, "bench_backend", "")),
++        "score": score,
++        "success": bool(success),
++        "evidence_class": evidence_class,
++        "failure_stage": failure_stage or None,
++        "failure_reason": failure_reason or None,
++        "task_description": _bounded_text(view.get("task_description"), 1_500),
++        "stages": compact_stages,
++        "tool_trace_summary": tool_summary,
++        "evaluation": {
++            k: evaluation.get(k)
++            for k in ("success", "score", "summary", "details")
++            if k in evaluation
++        },
++        "final_output": final_output,
++        "compression_policy": "retained_outcome_failure_nearmiss_reusable_success_stage_evidence",
++    }
++    encoded = json.dumps(evidence, ensure_ascii=False, default=str)
++    if len(encoded) > _RETAINED_EVIDENCE_MAX_CHARS:
++        evidence["task_description"] = _bounded_text(evidence["task_description"], 700)
++        evidence["final_output"] = _bounded_text(evidence["final_output"], 500)
++        evidence["stages"] = evidence["stages"][:2]
++        evidence["tool_trace_summary"] = None
++    return evidence
++
++
+ # Bulk search / retrieval payloads (BrowseComp-style); avoid generic keys like "content".
+ _BULK_TOOLISH_KEYS = frozenset(
+     {
+@@ -442,6 +558,62 @@
+     }
+
+
++def _sanitize_native_trace(raw: dict[str, Any], record: Any) -> dict[str, Any]:
++    """Build the shared evolution view for native benchmark traces.
++
++    Native adapters already persist the same Skill-MAS build stages and tool
++    events as the other backends.  Reuse the established stage trimmer and
++    internal trace summary rather than introducing a native-only truncation
++    policy.  Large execution state and raw model usage are deliberately left
++    on disk and are not copied into optimizer prompts.
++    """
++    task_description = str(raw.get("task_description") or raw.get("prompt") or "")
++    raw_stages = raw.get("build_stages")
++    stages = _trim_build_stage_traces(raw_stages)
++    mas_code = raw.get("mas_code")
++    evaluation = raw.get("evaluation")
++    if not isinstance(evaluation, dict):
++        evaluation = {}
++    else:
++        evaluation = copy.deepcopy(evaluation)
++
++    out: dict[str, Any] = {
++        "schema": SCHEMA_EVOLUTION_VIEW,
++        "bench_backend": str(raw.get("bench_backend") or getattr(record, "bench_backend", "")),
++        "task_id": str(raw.get("task_id") or getattr(record, "task_id", "")),
++        "split": raw.get("split"),
++        "task_description": task_description,
++        "score_record": {
++            "score": float(getattr(record, "score", 0.0)),
++            "score_source": getattr(record, "score_source", ""),
++        },
++        "success": raw.get("success"),
++        "failure_stage": raw.get("failure_stage"),
++        "failure_reason": raw.get("failure_reason"),
++        "evaluation": evaluation,
++        "final_output": raw.get("final_output"),
++        "skill_mas_build_stages": stages,
++        "native_tool_trace_summary": summarize_native_trace(raw.get("native_tool_trace")),
++        "usage_totals": copy.deepcopy(raw.get("usage_totals"))
++        if isinstance(raw.get("usage_totals"), dict)
++        else None,
++    }
++
++    if isinstance(mas_code, str) and mas_code.strip():
++        out["mas_code"] = _mas_code_forward_async_only(mas_code)
++
++    for key in (
++        "elapsed_seconds",
++        "effective_elapsed_seconds",
++        "effective_budget_seconds",
++        "api_recovery_window_seconds",
++        "api_recovery_excluded_seconds",
++    ):
++        if key in raw:
++            out[key] = raw.get(key)
++    return out
++
++
+ def _sanitize_from_bundle_path(bundle_path: Path, record: Any) -> dict[str, Any] | None:
+     try:
+         bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+@@ -521,6 +693,9 @@
+                 return collapse_bulk_tool_like_payloads(copy.deepcopy(raw_result))
+             return copy.deepcopy(raw_result)
+
++    if bb in _NATIVE_EVOLUTION_BACKENDS and isinstance(raw_result, dict):
++        return _sanitize_native_trace(raw_result, record)
++
+     if isinstance(raw_result, (dict, list)):
+         if bb == "bcp":
+             return collapse_bulk_tool_like_payloads(copy.deepcopy(raw_result))
+--- a/utils/paths.py
++++ b/utils/paths.py
+@@ -2,6 +2,7 @@
+
+ from __future__ import annotations
+
++import os
+ from pathlib import Path
+
+ # Skill_MAS/utils/paths.py -> parents[1] == Skill_MAS package root
+@@ -18,7 +19,7 @@
+
+ MODEL_CONFIG_JSON = SKILL_MAS_ROOT / "skill_mas" / "model_config.json"
+ INIT_SKILL_DIR = SKILL_MAS_ROOT / "init_skill"
+-RESULTS_ROOT = SKILL_MAS_ROOT / "results"
++RESULTS_ROOT = Path(os.environ.get("SKILL_MAS_RESULTS_ROOT", str(SKILL_MAS_ROOT / "results"))).expanduser().resolve()
+
+ # Back-compat alias used by older modules
+ REPO_ROOT = PACKAGE_ROOT
+--- a/utils/traces.py
++++ b/utils/traces.py
+@@ -78,6 +78,16 @@
+         "tool_name_counts": dict(cnt.most_common(16)),
+         "tail_preview": tail_s,
+     }
++
++
++def summarize_native_trace(traces: Any) -> dict[str, Any] | None:
++    """Return the standard compact tool-trace summary used by optimizer payloads.
++
++    Native adapters record the same event shape as the internal traces summarized for
++    the existing benchmarks. Keeping this public wrapper lets evolution reuse the
++    repository's established summary policy without inventing a native-only truncation.
++    """
++    return _summarize_internal_trace(traces)
+
+
+ def summarize_run(results_path: Path) -> dict[str, Any]:

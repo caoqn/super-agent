@@ -1,0 +1,7 @@
+# Manager + 3 workers MASBench baseline (Python 3.11).
+openai==1.101.0
+httpx==0.28.1
+numpy==2.2.6
+scipy==1.15.3
+PuLP==3.2.2
+colorama==0.4.6

@@ -1,0 +1,14 @@
+services:
+  manager3:
+    build:
+      context: ..
+      dockerfile: docker/manager3.Dockerfile
+    env_file:
+      - ${MASBENCH_DOTENV:-../configs/manager3/masbench.env}
+    environment:
+      MASBENCH_ROOT: /mnt/masbench
+      MASBENCH_OUT_DIR: /app/results/manager3/masbench/test90
+    volumes:
+      - ${MASBENCH_HOST_ROOT:?Set MASBENCH_HOST_ROOT to the local MASBench-main directory}:/mnt/masbench:ro
+      - ../results/manager3:/app/results/manager3
+    init: true

@@ -56,3 +56,7 @@ The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/ma
 ## Super Agent
 
 The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.
+
+## ReAct and AOrchestra on MAC-Bench
+
+These MAC-Bench integrations use its pinned external implementations and official evaluator. This repository stores method specifications and launchers only; see the [ReAct](benchmarks/macbench/adapters/react/README.md) and [AOrchestra](benchmarks/macbench/adapters/aorchestra/README.md) setup guides.

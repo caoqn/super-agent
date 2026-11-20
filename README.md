@@ -10,6 +10,8 @@ This repository separates **method implementations** from their **benchmark adap
 - `configs/matrix.yaml` lists the method/benchmark combinations currently represented here.
 - `data/manifests/` contains the public MASBench sample-selection manifest. Obtain benchmark task data from its official source.
 
+The selected baselines are EvoTeam, Skill-MAS, AgentNet, and AOrchestra. The current adapters cover Skill-MAS and AgentNet on GAIA, MAC-Bench, and MASBench, and AOrchestra on MASBench; EvoTeam still needs adapters. ReAct, Vanilla, and Super Agent are also present as methods outside this selected comparison. See [baseline dependencies and adapter status](docs/baseline-dependencies.md) before setting up environments.
+
 ## Code and dependencies
 
 Keep this project's method implementations and benchmark adapters in Git; install their Python packages and upstream frameworks separately into the run environment. Put benchmark-specific setup instructions and dependency lists beside the adapter, and install only what the selected run needs instead of maintaining one large environment for every baseline. For upstream frameworks such as AgentNet and AOrchestra, record the source and revision and keep their checkout outside tracked source. Keep downloaded benchmark data, container images, and run outputs outside Git; track only small manifests needed to reproduce selections.
@@ -34,7 +36,7 @@ See [the file-by-file migration map](docs/file-migration-map.csv) for the old-to
 
 ## MASBench
 
-Clone [MASBench](https://github.com/BUPT-GAMMA/MASBench) into `MASBench-main/`. For AOrchestra, also clone [AOrchestra](https://github.com/FoundationAgents/AOrchestra) into `AOrchestra-main/` and install its dependencies. Generate selected inputs from official benchmark data and compare the manifest with the checked-in selection:
+Clone [MASBench](https://github.com/BUPT-GAMMA/MASBench) into `MASBench-main/`. For AOrchestra, follow [`methods/aorchestra/README.md`](methods/aorchestra/README.md) to clone its official repository into `AOrchestra-main/` and install its dependencies in a separate environment. Generate selected inputs from official benchmark data and compare the manifest with the checked-in selection:
 
 ```sh
 cp benchmarks/masbench/adapters/agentnet/pick_30_each.py MASBench-main/pick_30_each.py
@@ -46,8 +48,8 @@ cp -R MASBench-main/MASBench_selected_30/. benchmarks/masbench/adapters/agentnet
 Run the benchmark-specific adapters from the repository root:
 
 - AgentNet: follow [`benchmarks/masbench/adapters/agentnet/README.md`](benchmarks/masbench/adapters/agentnet/README.md).
-- AOrchestra: `python benchmarks/masbench/adapters/aorchestra/run_masbench.py --task all`.
-- ReAct: run the three `run_*.py` task scripts in `benchmarks/masbench/adapters/react/`, then its `run_all.py` summary script.
+- AOrchestra: install its separate Python 3.13 environment as described in [`methods/aorchestra/README.md`](methods/aorchestra/README.md), then run `python benchmarks/masbench/adapters/aorchestra/run_masbench.py --task all`.
+- ReAct: follow [`benchmarks/masbench/adapters/react/README.md`](benchmarks/masbench/adapters/react/README.md).
 - Vanilla: follow [`benchmarks/masbench/adapters/vanilla/README.md`](benchmarks/masbench/adapters/vanilla/README.md).
 
 The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/masbench/README.md). The MASBench license and task attribution remain alongside its AgentNet adapter; obtain task inputs from official benchmark sources.
@@ -56,3 +58,7 @@ The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/ma
 ## Super Agent
 
 The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.
+
+## Skill-MAS
+
+The native adapters for all three datasets are under `benchmarks/<dataset>/adapters/skill_mas/`. Follow [method setup](methods/skill_mas/README.md) for the separately installed upstream framework and the [file migration map](docs/skill-mas-migration.md) for the supplied local implementation.

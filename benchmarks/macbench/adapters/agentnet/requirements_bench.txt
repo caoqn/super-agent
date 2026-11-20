@@ -1,11 +1,6 @@
-# AgentNet + GAIA 运行所需（Python 3.10+）
+# AgentNet core packages used by the MAC-Bench assembly (Python 3.11+).
 numpy
-pandas
-pyarrow          # 读 GAIA parquet
 PyYAML
-networkx
-openpyxl         # xlsx 附件
-python-docx      # docx 附件
-python-pptx      # pptx 附件
-pypdf            # pdf 附件 / 网页 pdf
+openai           # AgentNet model components
+scikit-learn     # AgentNet experience model
 FlagEmbedding    # 原版 AgentNet 的 bge-large-en-v1.5 编码器（会带上 torch / transformers）

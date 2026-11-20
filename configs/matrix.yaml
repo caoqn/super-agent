@@ -1,6 +1,7 @@
-# Method to currently released benchmark adapters.
+# Checked-in method/benchmark adapters; see docs/baseline-dependencies.md for the selected study baselines.
 methods:
   agentnet: [gaia, macbench, masbench]
+  skill_mas: [gaia, macbench, masbench]
   aorchestra: [masbench]
   react: [masbench]
   vanilla: [masbench]

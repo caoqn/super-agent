@@ -1,6 +1,6 @@
 # MAC-Bench
 
-Install and download data from the [official MAC-Bench repository](https://github.com/rzchen777-wq/MAC_Bench). The AgentNet adapter is in `adapters/agentnet/`. Keep benchmark data and runtime images outside Git.
+Install and download data from the [official MAC-Bench repository](https://github.com/rzchen777-wq/MAC_Bench). The AgentNet adapter is in `adapters/agentnet/`. For AgentNet, install the official MAC-Bench Python package separately into the adapter's Python 3.11 environment, then download its task data and environment images with `mac-bench data download`; the adapter README has pinned install commands. Keep the external checkout, benchmark data, and runtime images outside Git.
 
 
 ## Super Agent adapter

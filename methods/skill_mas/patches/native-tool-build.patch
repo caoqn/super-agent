@@ -1,0 +1,80 @@
+--- a/skill_mas/build.py
++++ b/skill_mas/build.py
+@@ -91,7 +91,7 @@
+ AsyncToolCallFn = Callable[[Any], Awaitable[tuple[str, dict[str, Any]]]]
+ SyncToolCallFn = Callable[[Any], tuple[str, dict[str, Any]]]
+
+-TOOL_EXECUTION_MODES = ("llm_only", "multi_turn_search", "vita_tool")
++TOOL_EXECUTION_MODES = ("llm_only", "multi_turn_search", "vita_tool", "native_tool")
+
+ # When Stage-2 omits user_prompt, use a short embed-safe default (full task is in GLOBAL TASK CONTEXT at runtime).
+ _RUNTIME_USER_PROMPT_FALLBACK = (
+@@ -138,9 +138,16 @@
+         return "bcp"
+     if s in {"vita", "vitabench"}:
+         return "vita"
++    if s in {"gaia", "gaia_test", "gaia_train"}:
++        return "gaia"
++    if s == "masbench":
++        return "masbench"
++    if s in {"macbench", "mac_bench", "mac-bench"}:
++        return "macbench"
+     raise ValueError(
+         "Unsupported dataset_name. Expected one of: "
+-        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench; "
++        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench, "
++        "gaia, macbench, masbench; "
+         f"got {dataset_name!r}"
+     )
+
+@@ -183,6 +190,20 @@
+             "Never assign a sub-agent instructions that forbid booking or purchasing when the task requires a "
+             "completed transaction. Names like *_search only are discouraged when the rubric expects a "
+             "completed purchase or reservation — prefer sub-task intents that match **done** actions."
++        )
++    if d == "gaia":
++        return (
++            "GAIA: solve the question using the prompt, attached files, and permitted native tools when needed. "
++            "The final deliverable is one concise answer line prefixed exactly with `FINAL ANSWER:`; do not emit "
++            "planning commentary or multiple candidate answers."
++        )
++    if d == "masbench":
++        return "MASBench: preserve exact actor role_names, use private scoped tools and explicit messages. Game requires repeated simultaneous action rounds, up to 50. Do not access source data or answers. Preserve SkillMAS planning and workflow generation."
++    if d == "macbench":
++        return (
++            "MAC-Bench: complete the requested collaboration task through the provided task tools and shared "
++            "workspace. The evaluator scores the final application or repository state, so perform all required "
++            "mutations and verify the resulting state before the final response."
+         )
+     raise ValueError(
+         "Dataset not specified or generic: infer the intended deliverable and evaluation style from "
+@@ -377,9 +398,11 @@
+         return {"multi_turn_search"}
+     if dataset_name == "vita":
+         return {"vita_tool"}
++    if dataset_name in {"gaia", "macbench", "masbench"}:
++        return {"native_tool"}
+     raise ValueError(
+         "Unsupported dataset_name. Expected one of: "
+-        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench; "
++        "hlemath|hle, drb|drb_bridge, bcp|browsecomp, vita|vitabench, native benchmark backends; "
+         f"got {dataset_name!r}"
+     )
+
+@@ -436,6 +459,11 @@
+         for wrong in ("llm_only", "vita_tool"):
+             out = out.replace(f'"execution_mode": "{wrong}"', '"execution_mode": "multi_turn_search"')
+             out = out.replace(f"'execution_mode': '{wrong}'", "'execution_mode': 'multi_turn_search'")
++        return out
++    if only == "native_tool":
++        for wrong in ("llm_only", "multi_turn_search", "vita_tool"):
++            out = out.replace(f'"execution_mode": "{wrong}"', '"execution_mode": "native_tool"')
++            out = out.replace(f"'execution_mode': '{wrong}'", "'execution_mode': 'native_tool'")
+         return out
+     return out
+
+@@ -2399,4 +2427,3 @@
+
+ if __name__ == "__main__":
+     asyncio.run(_main())
+-

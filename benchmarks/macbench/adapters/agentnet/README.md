@@ -29,17 +29,24 @@ agentnet_macbench_run/（生成后的运行目录）
 
 ```bash
 python3.11 -m venv .venv311 && source .venv311/bin/activate
-pip install -r requirements_bench.txt
-pip install -e '../MAC_Bench-1.0[modal,agents]'   # 或 pip install mac-bench
+python -m pip install -r requirements_bench.txt
+git clone https://github.com/rzchen777-wq/MAC_Bench.git ../MAC_Bench-1.0
+git -C ../MAC_Bench-1.0 checkout c70d962ee8e428a6d9bae42af8d92e086581ee0d
+export MAC_BENCH_ROOT="$(cd ../MAC_Bench-1.0 && pwd)"
+python -m pip install -e "${MAC_BENCH_ROOT}[modal,agents]"
 modal token new
-mac-bench data download                            # 下载任务与镜像
+cd "$MAC_BENCH_ROOT"
+mac-bench data download                            # 下载任务与镜像到外部 checkout
+cd -
 ```
 
-2. **MAC_Bench-1.0 位置**：默认取本包父目录下的 `MAC_Bench-1.0`，也可用环境变量覆盖：
+2. **MAC_Bench-1.0 位置**：上面会把固定版本检出到本包父目录下的 `MAC_Bench-1.0`。如放在别处，用环境变量覆盖：
 
 ```bash
 export MAC_BENCH_ROOT=/path/to/MAC_Bench-1.0
 ```
+
+MAC-Bench 是单独安装的外部 Python 包；不要把它的源码复制进本仓库。`[modal,agents]` extras 对应本地评测器和内置 agent 依赖；任务文件与环境镜像由 `mac-bench data download` 获取。
 
 3. **配置 `.env`**（本包根目录）：
 

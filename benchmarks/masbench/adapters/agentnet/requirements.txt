@@ -1,0 +1,8 @@
+# Python package dependencies for the MASBench AgentNet runners.
+numpy
+scipy
+PuLP
+colorama
+openai
+python-dotenv
+requests

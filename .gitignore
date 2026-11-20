@@ -89,6 +89,9 @@ MASBench-main/
 MAC_Bench-1.0/
 agentnet_gaia_run/
 agentnet_macbench_run/
+skill_mas_gaia_run/
+skill_mas_macbench_run/
+skill_mas_masbench_run/
 results/
 save/
 .envrc
@@ -105,3 +108,6 @@ runs/
 # Local benchmark data and generated artifacts
 /benchmarks/*/data/
 /.artifacts/
+
+# Local verification dependencies and scratch files
+/work/

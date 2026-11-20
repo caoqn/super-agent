@@ -1,9 +1,12 @@
-# AgentNet + GAIA 运行所需（Python 3.10+）
+# AgentNet + GAIA 运行所需（Python 3.11+；GAIA sandbox uses MAC-Bench runtime）
 numpy
 pandas
 pyarrow          # 读 GAIA parquet
 PyYAML
-networkx
+networkx         # AgentNet agent graph
+huggingface_hub  # hf auth / dataset download CLI
+openai           # AgentNet model components
+scikit-learn     # AgentNet experience model
 openpyxl         # xlsx 附件
 python-docx      # docx 附件
 python-pptx      # pptx 附件

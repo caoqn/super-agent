@@ -4,7 +4,7 @@ import json
 from argparse import Namespace
 from pathlib import Path
 
-from benchmarks.macbench.evoteam.adapter import (
+from benchmarks.macbench.adapters.evoteam.adapter import (
     MacBenchAdapter,
     _load_catalog,
     _set_runtime_pool_tools,

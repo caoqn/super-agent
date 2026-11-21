@@ -12,5 +12,5 @@
     "1",
     "--evolve"
   ],
-  "pool": "benchmarks/gaia/evoteam/pools/initial"
+  "pool": "benchmarks/gaia/adapters/evoteam/pools/initial"
 }

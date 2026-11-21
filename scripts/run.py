@@ -25,6 +25,6 @@ if config.get("pool"):
     if not (pool / "pool.yaml").is_file():
         p.error(f"Pool config not found: {pool / 'pool.yaml'}")
     pool_args = ["--team", str(pool.resolve())]
-command = [sys.executable, str(ROOT / "benchmarks" / benchmark / "evoteam" / "run.py"),
+command = [sys.executable, str(ROOT / "benchmarks" / benchmark / "adapters" / "evoteam" / "run.py"),
            *config.get("args", []), *pool_args, *extra]
 raise SystemExit(subprocess.call(command, env=env, cwd=ROOT))

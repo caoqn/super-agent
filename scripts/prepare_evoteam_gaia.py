@@ -17,7 +17,7 @@ def main():
         raise FileExistsError('Use a new output directory to preserve existing data.')
     rows = [json.loads(line) for line in (args.source / 'metadata.jsonl').read_text().splitlines() if line.strip()]
     by_id = {row['task_id']: row for row in rows}
-    manifests = json.loads((ROOT / 'benchmarks/gaia/evoteam/splits.json').read_text())['splits']
+    manifests = json.loads((ROOT / 'benchmarks/gaia/adapters/evoteam/splits.json').read_text())['splits']
     outputs, files = {}, {}
     for split, levels in manifests.items():
         for level, ids in levels.items():

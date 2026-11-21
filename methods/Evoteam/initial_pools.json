@@ -3,7 +3,7 @@
   "pools": {
     "gaia": {
       "source_pool": "pool_GAIA_pool",
-      "path": "benchmarks/gaia/evoteam/pools/initial",
+      "path": "benchmarks/gaia/adapters/evoteam/pools/initial",
       "files_sha256": {
         "answer_agent/config.yaml": "6723376c8b89da92f58baaed055fbec3085a6f21f54933fdfd7e492c21fb6032",
         "answer_agent/prompt.md": "a1e8675b6599f2c9b64c1b35be3138cc1daf1ef8bf46051ee01e61f66ee4d32c",
@@ -27,7 +27,7 @@
     },
     "macbench": {
       "source_pool": "pool_MACBENCH_OURS_INITIAL",
-      "path": "benchmarks/macbench/evoteam/pools/initial",
+      "path": "benchmarks/macbench/adapters/evoteam/pools/initial",
       "files_sha256": {
         "chairman/config.yaml": "4cc7e1baad919a795f4b7a6769e44ddb6aee56bd1f1f75c253aa886eb4b14143",
         "chairman/prompt.md": "639471e1c87dd0ac75efe738453bef626d66974c2d5707b7f638337847295549",
@@ -47,7 +47,7 @@
     },
     "masbench": {
       "source_pool": "pool_MASBENCH_DYNAMIC_6",
-      "path": "benchmarks/masbench/evoteam/pools/initial",
+      "path": "benchmarks/masbench/adapters/evoteam/pools/initial",
       "files_sha256": {
         "answer_agent/config.yaml": "255b5c64f6d9facf7347542807937ccedd1c9e63abcd915d70f627291f940011",
         "answer_agent/prompt.md": "4f2d17d49ee1990e55da016f04141317587ebf04a6672b517a9a568899796f94",

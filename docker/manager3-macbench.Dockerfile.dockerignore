@@ -1,0 +1,15 @@
+.git
+.venv
+.venv-*
+venv
+__pycache__
+*.py[cod]
+.env
+.env.*
+*.env
+results/**
+data/**
+external/**
+MAC_Bench-main/**
+MAC_Bench-1.0/**
+MASBench-main/**

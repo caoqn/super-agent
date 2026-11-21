@@ -1,0 +1,16 @@
+services:
+  manager3-macbench:
+    build:
+      context: ..
+      dockerfile: docker/manager3-macbench.Dockerfile
+    env_file:
+      - ${MAC_BENCH_DOTENV:-../configs/manager3/macbench.env}
+    environment:
+      PYTHONPATH: /app:/mnt/macbench/src
+      MAC_BENCH_ROOT: /mnt/macbench
+      MAC_BENCH_SPLIT: ${MAC_BENCH_SPLIT:-test}
+      MAC_BENCH_SANDBOX_BACKEND: ${MAC_BENCH_SANDBOX_BACKEND:-modal}
+    volumes:
+      - ${MAC_BENCH_HOST_ROOT:?Set MAC_BENCH_HOST_ROOT to the local MAC_Bench-main directory}:/mnt/macbench:ro
+      - ../results/manager3/macbench:/app/results/manager3/macbench
+    init: true

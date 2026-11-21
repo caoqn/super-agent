@@ -21,3 +21,19 @@ python benchmarks/macbench/adapters/super_agent/adapter.py \
 Remove `--dry-run` to run the evaluation. The upstream checkout, environment, data, and credentials are not configured here, and this entry point has not completed end-to-end validation. Treat the official output as the source of final PS/RR metrics, usage, and traces.
 
 The official MAC-Bench `superagent` implementation includes its task environment, router, workers, subagents, and evaluator. This adapter pins the upstream checkout, passes the YAML configuration and budgets, and saves the official output.
+
+## Manager + 3 workers
+
+The repository also includes a prompt-driven `manager3` implementation in
+`methods/manager3/macbench/`. It is a fixed hierarchy of one manager and three
+persistent workers. The first manager action must assign all three workers;
+worker model calls are concurrent, while environment mutations are serialized
+against the shared MAC-Bench episode world. The official MAC-Bench budget table
+is applied per task and shared by all four agents.
+
+Use `benchmarks/macbench/adapters/manager3/adapter.py` as the benchmark-facing
+entry point, and `methods/manager3/config/macbench.yaml` as the method record and
+`configs/manager3/macbench.env.example` as the configuration template. The
+runner mounts the upstream MAC-Bench checkout at runtime instead of committing
+its data or evaluator here. See `methods/manager3/README.md#mac-bench` for
+local and Docker commands.

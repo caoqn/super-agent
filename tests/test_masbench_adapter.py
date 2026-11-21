@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from pathlib import Path
 import yaml
 
-from methods.Evoteam.masbench.adapter import MASBenchAdapter, _squad_f1
+from benchmarks.masbench.evoteam.adapter import MASBenchAdapter, _squad_f1
 
 
 class MASBenchAdapterTests(unittest.TestCase):
@@ -46,7 +46,7 @@ class MASBenchAdapterTests(unittest.TestCase):
                          {self.adapter.get_item_id(x) for x in self.test})
 
     def test_dynamic_six_member_pool_is_default_and_has_official_prompt_files(self):
-        pool = Path(__file__).resolve().parents[1] / "methods/Evoteam/masbench/pools/initial"
+        pool = Path(__file__).resolve().parents[1] / "benchmarks/masbench/evoteam/pools/initial"
         self.assertEqual(self.adapter.default_team, "pool_MASBENCH_DYNAMIC_6")
         self.assertEqual(len(list(pool.glob("*/config.yaml"))), 7)
         for name in ("planner", "evidence_agent", "schedule_agent", "game_agent",

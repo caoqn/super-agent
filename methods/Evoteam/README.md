@@ -17,7 +17,7 @@ export META_TEAM_ENV_FILE="$PWD/.env"
 
 安装器从公开 GitHub 下载 `source-lock.json` 指定的确切提交，校验每个源码文件的 SHA-256，并安装运行依赖；不需要 GitHub 登录。默认放入被 Git 忽略的 `external/EvoTeam/`。可加 `--no-install` 只下载，或 `--destination` 指定位置。非默认位置需在 shell 中导出 `EVOTEAM_ROOT`，仅写入 `.env` 不会改变源码解析路径。已有目录不覆盖；不兼容或被修改的源码会明确报错。
 
-模型默认为 `deepseek-chat`，三个训练配置均为 `workers=1`、开启 `--evolve`。显式 `META_TEAM_ENV_FILE` 中的模型变量可能覆盖配置默认值，请核对 `.env` 中的 `META_TEAM_MODEL`、`TEAM_SELECTOR_MODEL` 和 `TEAM_REFLECTION_MODEL`。数据路径需通过 shell `export` 设置。
+模型默认为 `deepseek-chat`，三个 benchmark 适配器位于 `benchmarks/{gaia,macbench,masbench}/evoteam/`；`methods/Evoteam/` 只保留公共源码引导、版本锁和说明。三个训练配置均为 `workers=1`、开启 `--evolve`。显式 `META_TEAM_ENV_FILE` 中的模型变量可能覆盖配置默认值，请核对 `.env` 中的 `META_TEAM_MODEL`、`TEAM_SELECTOR_MODEL` 和 `TEAM_REFLECTION_MODEL`。数据路径需通过 shell `export` 设置。
 
 ## 准备数据
 
@@ -29,7 +29,7 @@ export META_TEAM_ENV_FILE="$PWD/.env"
 python scripts/prepare_evoteam_gaia.py --source "$GAIA_VALIDATION_DIR"
 ```
 
-此脚本依据 `methods/Evoteam/gaia/splits.json` 中的固定任务 ID 重建 20 题训练集及 100 题测试集。默认输出 `data/gaia`；使用其他位置时导出 `GAIA_DATA_DIR`，其中需包含 `level_{1,2,3}_{train_20,test_100}.json` 和 `val_files/`。不改变其他方法的 GAIA 划分。
+此脚本依据 `benchmarks/gaia/evoteam/splits.json` 中的固定任务 ID 重建 20 题训练集及 100 题测试集。默认输出 `data/gaia`；使用其他位置时导出 `GAIA_DATA_DIR`，其中需包含 `level_{1,2,3}_{train_20,test_100}.json` 和 `val_files/`。不改变其他方法的 GAIA 划分。
 
 **MAC-Bench**：获取包含 `data/`、`src/mac_bench/`、`configs/evaluation/task_budgets.json` 的 [MAC-Bench](https://github.com/rzchen777-wq/MAC_Bench) 源码及数据，并设置：
 
@@ -59,7 +59,7 @@ python scripts/run.py --config configs/Evoteam_macbench_train.json
 python scripts/run.py --config configs/Evoteam_masbench_train.json
 ```
 
-启动前可追加 `--dry-run --max-items 1`，检查数据选择且不调用模型。追加 CLI 参数覆盖默认参数，例如 `--run-id my_mac_train` 或 `--cases 0`。初始池位于 `methods/Evoteam/{gaia,macbench,masbench}/pools/initial`；来源及文件校验和见 `initial_pools.json`。
+启动前可追加 `--dry-run --max-items 1`，检查数据选择且不调用模型。追加 CLI 参数覆盖默认参数，例如 `--run-id my_mac_train` 或 `--cases 0`。初始池位于 `benchmarks/{gaia,macbench,masbench}/evoteam/pools/initial`；来源及文件校验和见 `initial_pools.json`。
 
 训练复制初始池到运行目录的 `team/v000`，再保存演化版本；后续题目使用最新版本，初始快照不会被修改。默认输出 `results/Evoteam/`，可导出 `EVAL_RESULTS_DIR` 重定向。通过 `--run-id <已有运行名> --resume` 续跑；具体参数可用对应入口的 `--help` 查看。
 

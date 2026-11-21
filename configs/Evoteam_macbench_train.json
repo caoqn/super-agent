@@ -13,5 +13,5 @@
     "1",
     "--evolve"
   ],
-  "pool": "methods/Evoteam/macbench/pools/initial"
+  "pool": "benchmarks/macbench/evoteam/pools/initial"
 }

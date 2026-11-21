@@ -54,11 +54,11 @@ class LifecycleAdapter(BenchmarkAdapter):
 def test_initial_pool_evolves_and_next_case_reuses_version(tmp_path, monkeypatch, benchmark):
     # Import each real adapter in the same process to check shared/external namespace wiring.
     import importlib
-    module = importlib.import_module(f"methods.Evoteam.{benchmark}.adapter")
+    module = importlib.import_module(f"benchmarks.{benchmark}.evoteam.adapter")
     assert module.BenchmarkAdapter is BenchmarkAdapter
     from main import load_pool
     from core.runner import Runner
-    source = ROOT / "methods/Evoteam" / benchmark / "pools/initial"
+    source = ROOT / "benchmarks" / benchmark / "evoteam" / "pools/initial"
     before = snapshot(source)
     pool = load_pool(source)
     assert pool.chairman_name in pool.agents

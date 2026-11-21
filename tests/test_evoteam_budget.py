@@ -6,7 +6,7 @@ import pytest
 from methods.Evoteam.bootstrap import configure_source
 configure_source()
 from benchmarks.adapter import EnvContext
-from methods.Evoteam.macbench.adapter import MacBenchAdapter, _TaskActionBudget
+from benchmarks.macbench.evoteam.adapter import MacBenchAdapter, _TaskActionBudget
 from core import llm
 from core.api_resilience import APIReliabilityTracker
 from core.runner import Runner

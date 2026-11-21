@@ -1,6 +1,6 @@
 # EvoTeam Benchmark Adapter
 
-Method source: [the individual-benchmark-v1 branch of caoqn/EvoTeam](https://github.com/caoqn/EvoTeam/tree/individual-benchmark-v1). This branch provides the single-dataset experiment interface used by the three adapters; the source repository's `main` branch retains the mixed-dataset implementation. This evaluation repository stores only adapters, experiment configurations, initial pools, and a source version lock. It does not include the method implementation, frozen pools, or evolution artifacts.
+The method source is obtained from the [upstream EvoTeam repository](https://github.com/caoqn/EvoTeam) at the revision recorded in `source-lock.json`. This repository stores benchmark adapters, experiment configurations, initial pools, and the source version lock; it does not include the method implementation or generated training artifacts.
 
 ## Install the Pinned Source Version
 
@@ -29,7 +29,7 @@ Datasets and reference answers are not distributed with the code. Obtain access 
 python scripts/prepare_evoteam_gaia.py --source "$GAIA_VALIDATION_DIR"
 ```
 
-This script rebuilds the 20-task training split and 100-task test split from the fixed task IDs in `benchmarks/gaia/adapters/evoteam/splits.json`. The default output is `data/gaia`. For another location, export `GAIA_DATA_DIR`; it must contain `level_{1,2,3}_{train_20,test_100}.json` and `val_files/`. This does not change the GAIA splits used by other methods.
+This script prepares the inputs defined by the adapter split manifest. The default output is `data/gaia`. For another location, export `GAIA_DATA_DIR`; the directory must contain the generated split files and attachments. These files are local inputs for this adapter.
 
 **MAC-Bench**: Obtain the [MAC-Bench](https://github.com/rzchen777-wq/MAC_Bench) source and data, including `data/`, `src/mac_bench/`, and `configs/evaluation/task_budgets.json`, then set:
 

@@ -16,8 +16,8 @@ Configure `MAC_BENCH_LLM_BASE_URL`, `MAC_BENCH_LLM_API_KEY`, and `MAC_BENCH_LLM_
 
 ```bash
 python benchmarks/macbench/adapters/react/run.py \
-  --upstream /path/to/MAC_Bench --task-id op26_business_finance_001 \
+  --upstream /path/to/MAC_Bench --task-id TASK_ID \
   --output-dir /path/to/results/react --dry-run
 ```
 
-The wrapper reads paper task budgets from the pinned MAC-Bench checkout by default. For a development task absent from that file, provide all four budget flags explicitly. For example, the MAC-Bench getting-started budget is 400,000 tokens, 80 model calls, 160 tool calls, and 2,400 seconds. Remove `--dry-run` to execute. The wrapper validates the MAC-Bench commit, passes the tracked method YAML to the official evaluator, and uses MAC-Bench's native result and scoring path. Explicit budget flags override the task defaults.
+The wrapper reads task budgets from the pinned MAC-Bench checkout by default; provide explicit budget flags when the selected task has no recorded defaults. Remove `--dry-run` to execute. The wrapper validates the MAC-Bench revision, passes the tracked method YAML to the evaluator, and uses MAC-Bench's result and scoring path. Explicit budget flags override task defaults.

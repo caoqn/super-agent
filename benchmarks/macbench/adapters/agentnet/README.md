@@ -54,14 +54,14 @@ LLM_PRICE_OUTPUT_PER_1M=...
 ## Run
 
 ```bash
-python run_macbench.py --task-ids op26_service_administration_007   # Run one dev task first.
+python run_macbench.py --task-ids TASK_ID                           # Replace with an available task ID.
 python run_macbench.py --split test                                  # Run the full test split.
 python run_macbench.py --split test --warmup-dev                     # Evolve on 6 dev tasks before testing.
 ```
 
 Outputs are saved under `save/macbench_<timestamp>/`: `results.jsonl` (per-task PS/RR, elapsed time, tokens, and cost) and `summary.json`.
 
-The default budget matches the upstream settings: 1M tokens / 80 model calls / 160 tool calls / 2400 seconds.
+Default task budgets are read from the installed MAC-Bench configuration and can be overridden with the runner options.
 
 ## Notes
 

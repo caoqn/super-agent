@@ -14,7 +14,7 @@ The official setup requires Linux, Python 3.11+, Node.js 24+, pnpm, and either M
 ```sh
 python benchmarks/macbench/adapters/super_agent/adapter.py \
   --upstream /path/to/MAC_Bench --python /path/to/MAC_Bench/.venv/bin/python \
-  --task-id op26_service_administration_007 --output-dir results/macbench-dev \
+  --task-id TASK_ID --output-dir results/macbench-dev \
   --max-seconds 7200 --method-config methods/super_agent/config/macbench.yaml --dry-run
 ```
 

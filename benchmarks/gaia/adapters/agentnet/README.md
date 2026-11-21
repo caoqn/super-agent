@@ -55,10 +55,10 @@ SERPER_API_KEY=...    # Or TAVILY_API_KEY for search tools.
 ## Run
 
 ```bash
-python run_gaia.py --limit 3                 # Smoke test on 3 tasks.
-python run_gaia.py                            # Run all 165 validation tasks.
-python run_gaia.py --levels 1                 # Run Level 1 only.
-python run_gaia.py --start 50 --limit 20      # Run 20 tasks starting at index 50.
+python run_gaia.py --limit 1                  # Run a small smoke test.
+python run_gaia.py                            # Run the configured validation split.
+python run_gaia.py --levels 1                 # Restrict evaluation to selected levels.
+python run_gaia.py --start 0 --limit 1
 python run_gaia.py --resume save/gaia_xxx     # Resume an interrupted run.
 ```
 

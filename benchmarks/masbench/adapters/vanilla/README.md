@@ -1,46 +1,46 @@
-# Vanilla Agent 适配层
+# Vanilla Agent Adapter
 
-MASBench 90 题的 **Vanilla（原装智能体）基线** 实现。
+The **Vanilla (unmodified agent) baseline** implementation for 90 MASBench tasks.
 
-## 口径
+## Protocol
 
-Vanilla = **单轮 LLM 调用、无 ReAct 循环、无工具调用**。把任务相关信息一次性全部放进 prompt，模型直接输出最终答案/计划：
+Vanilla uses **a single LLM call, with no ReAct loop or tool calls**. All task information is provided in one prompt, and the model directly returns its final answer or plan:
 
-- **Reasoning**：两方证据 + 问题一次性给出 → 直接作答 → 官方 `cal_f1_score`
-- **Scheduling**：5 人空闲段一次性给出 → 直接出槽位 → 官方槽位精确匹配
-- **Game**：完整地图一次性给出 → 输出整套动作计划 → 重放进 `GridWorld` 物理回放 → `sum(min(交付,目标))`
+- **Reasoning**: Provide both evidence sets and the question, then score the answer with the official `cal_f1_score`.
+- **Scheduling**: Provide the free slots for all five people, then score the selected slot with the official exact-match evaluator.
+- **Game**: Provide the complete map, replay the full action plan in `GridWorld`, and score with `sum(min(delivered, target))`.
 
-评分口径与 ReAct **完全一致**（纯「机制」差异对比）。通用单轮模型客户端位于 `methods/vanilla/llm.py`。
+Scoring matches ReAct **exactly**, isolating the mechanism difference. The shared single-call model client is in `methods/vanilla/llm.py`.
 
-## 文件结构
+## File layout
 
 ```
 benchmarks/masbench/adapters/vanilla/
-├── run_vanilla.py   # MASBench 任务适配、提示词与评测
+├── run_vanilla.py   # MASBench task adapter, prompts, and evaluation
 └── README.md
 ```
 
-## 依赖
+## Dependencies
 
-评分函数**复用** `../react/` 里的三个 runner（`run_reasoning.py` / `run_scheduling.py` / `run_game.py`），以保证 Vanilla 和 ReAct 用同一套评分口径：
+Scoring functions are **reused** from the three runners in `../react/` (`run_reasoning.py`, `run_scheduling.py`, and `run_game.py`) so Vanilla and ReAct use the same scoring protocol:
 
-- `run_reasoning.py` 的 `_fmt_evidence`、`cal_f1_score`（官方）
-- `run_scheduling.py` 的 `_free_gaps`、`_evaluate`、`_min_to_hhmm`
-- `run_game.py` 的 `GridWorld`
+- `_fmt_evidence` and official `cal_f1_score` from `run_reasoning.py`
+- `_free_gaps`, `_evaluate`, and `_min_to_hhmm` from `run_scheduling.py`
+- `GridWorld` from `run_game.py`
 
-`run_vanilla.py` 通过 `sys.path` 引用上述模块，不复制评分逻辑。
+`run_vanilla.py` imports these modules through `sys.path`; scoring logic is not duplicated.
 
-## 运行
+## Run
 
 ```bash
 cd benchmarks/masbench/adapters/vanilla
-python3 run_vanilla.py reasoning    # Reasoning（30 题，单轮）
-python3 run_vanilla.py scheduling   # Scheduling（30 场景，单轮）
-python3 run_vanilla.py game         # Game（30 地图，单轮）
+python3 run_vanilla.py reasoning    # Reasoning (30 tasks, single call)
+python3 run_vanilla.py scheduling   # Scheduling (30 scenarios, single call)
+python3 run_vanilla.py game         # Game (30 maps, single call)
 ```
 
-带断点续跑：结果文件已存在时自动跳过已完成的题。
+Resume is automatic: tasks already present in the result file are skipped.
 
-## 结果
+## Results
 
-见 `results/vanilla_*.jsonl`。
+See `results/vanilla_*.jsonl`.

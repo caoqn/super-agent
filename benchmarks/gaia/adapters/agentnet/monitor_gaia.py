@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""GAIA 运行监视器：只读，不干扰正在跑的实验。
+"""Read-only GAIA monitor. Defaults to the latest save/gaia_* run.
 
-  python3 monitor_gaia.py                  # 自动选 save/ 下最新的 gaia_* 目录
-  python3 monitor_gaia.py save/gaia_xxx    # 指定目录
+  python3 monitor_gaia.py                  # Automatically select the latest gaia_* directory under save/
+  python3 monitor_gaia.py save/gaia_xxx    # Select a directory
 
-输出一段简报；若有异常，末尾追加 "!! 告警 ..." 行。
-退出码：0 正常/已完成，1 有告警。
+Prints a short report and appends a "!! Warning ..." line when issues are found.
+Exit codes: 0 for healthy or completed; 1 when warnings are present.
 """
 import json
 import os
@@ -16,8 +16,8 @@ from collections import Counter, defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAVE = os.path.join(HERE, "save")
-EXPECTED = 165                      # validation 全量题数
-STALL_SECONDS = 900                 # 超过 15 分钟没有新结果就判定卡住
+EXPECTED = 165                      # Full validation-set task count.
+STALL_SECONDS = 900                 # Flag a stall after 15 minutes without new results.
 
 
 def pick_dir(argv):
@@ -29,12 +29,12 @@ def pick_dir(argv):
         if name.startswith("gaia_") and os.path.isdir(p):
             cands.append((os.path.getmtime(p), p))
     if not cands:
-        sys.exit("找不到 save/gaia_* 目录")
+        sys.exit("No save/gaia_* directory found")
     return max(cands)[1]
 
 
 def proc_alive(run_dir):
-    """找出正在写这个目录的 run_gaia.py 进程（命令行里可能是相对路径，用目录名匹配）。"""
+    """Find the run_gaia.py process writing this directory, matching its directory name."""
     try:
         out = subprocess.run(["pgrep", "-fl", "run_gaia.py"], capture_output=True, text=True).stdout
     except Exception:
@@ -99,23 +99,23 @@ def main():
     last_write = os.path.getmtime(results_path) if os.path.exists(results_path) else None
     silent = (now - last_write) if last_write else None
 
-    print(f"== GAIA 监视 {time.strftime('%H:%M:%S')} ==")
-    print(f"目录: {rel}")
-    print(f"进程: {'运行中 PID ' + pid if pid else '未在运行'}")
-    print(f"进度: {n}/{EXPECTED} ({n / EXPECTED:.1%})  正确 {ok}/{n}" +
+    print(f"== GAIA monitor {time.strftime('%H:%M:%S')} ==")
+    print(f"Directory: {rel}")
+    print(f"Process: {'running PID ' + pid if pid else 'not running'}")
+    print(f"Progress: {n}/{EXPECTED} ({n / EXPECTED:.1%})  correct {ok}/{n}" +
           (f" ({ok / n:.1%})" if n else ""))
 
     if n:
         avg_s = work_s / n
         avg_c = cost / n
         eta_h = (EXPECTED - n) * avg_s / 3600
-        print(f"单题: {avg_s / 60:.1f} min, {fmt_money(avg_c)}")
-        print(f"累计: {work_s / 3600:.1f} h 墙钟, {fmt_money(cost)}")
+        print(f"Per task: {avg_s / 60:.1f} min, {fmt_money(avg_c)}")
+        print(f"Total: {work_s / 3600:.1f} h wall time, {fmt_money(cost)}")
         if pid:
-            print(f"预计剩余: {eta_h:.1f} h   全量成本约 {fmt_money(avg_c * EXPECTED)}")
+            print(f"Estimated remaining: {eta_h:.1f} h   Estimated full-run cost {fmt_money(avg_c * EXPECTED)}")
 
     if silent is not None:
-        print(f"最后写入: {silent / 60:.0f} 分钟前")
+        print(f"Last write: {silent / 60:.0f} minutes ago")
 
     st = truncation_stats(os.path.join(run_dir, "calls.jsonl"))
     if st:
@@ -128,7 +128,7 @@ def main():
             cut = c.get("length", 0)
             parts.append(f"{role} {cut}/{tot}")
         if parts:
-            print("截断(finish=length): " + " | ".join(parts))
+            print("Truncated (finish=length): " + " | ".join(parts))
 
     log_txt = ""
     if os.path.exists(log_path):
@@ -137,36 +137,36 @@ def main():
     fallbacks = log_txt.count("unusable router decision")
     converged = log_txt.count("router did not converge")
     if fallbacks or converged:
-        print(f"兜底触发: 空决策回退 {fallbacks} 次, 轮次超限 {converged} 次")
+        print(f"Fallbacks: empty decision {fallbacks} times, round limit {converged} times")
 
     alerted = []
     if errs:
         kinds = Counter((r.get("error") or "").split(":")[0] for r in errs)
-        print(f"出错题数: {len(errs)}/{n}  " + ", ".join(f"{k}×{v}" for k, v in kinds.most_common(3)))
+        print(f"Failed tasks: {len(errs)}/{n}  " + ", ".join(f"{k}×{v}" for k, v in kinds.most_common(3)))
         if len(errs) / n > 0.2:
-            alerted.append(f"{len(errs)}/{n} 题异常，比例过高")
+            alerted.append(f"{len(errs)}/{n} tasks failed; failure rate too high")
     if bad:
-        alerted.append(f"results.jsonl 有 {bad} 行无法解析")
+        alerted.append(f"results.jsonl has {bad} unparsable lines")
 
     if pid is None:
         if n >= EXPECTED:
-            print("状态: 已跑完")
+            print("Status: completed")
         elif os.path.exists(os.path.join(run_dir, "summary.json")):
-            print("状态: 进程已退出并写了 summary（可能被中断）")
-            alerted.append("进程已退出但只完成 %d/%d" % (n, EXPECTED))
+            print("Status: process exited with summary (possibly interrupted)")
+            alerted.append("Process exited after completing only %d/%d" % (n, EXPECTED))
         else:
-            print("状态: 进程已消失且无 summary")
-            alerted.append("进程消失且未写 summary")
+            print("Status: process exited without a summary")
+            alerted.append("Process exited without writing a summary")
     elif n == 0:
-        print("状态: 正常（刚启动，还没有完成第一题）")
+        print("Status: healthy (starting; no task completed yet)")
     elif silent is not None and silent > STALL_SECONDS and n < EXPECTED:
-        print("状态: 疑似卡住")
-        alerted.append(f"{silent / 60:.0f} 分钟无新结果")
+        print("Status: possible stall")
+        alerted.append(f"{silent / 60:.0f} minutes without new results")
     else:
-        print("状态: 正常")
+        print("Status: healthy")
 
     for a in alerted:
-        print(f"!! 告警 {a}")
+        print(f"!! Warning {a}")
     return 1 if alerted else 0
 
 

@@ -1,8 +1,8 @@
-"""从 MAS-Bench 三个任务各挑 30 个，数据放到独立文件夹（seed=42 可复现）。
+"""Select 30 tasks per MASBench category with seed 42.
 
-- Reasoning: 30 题 = 20 easy + 10 hard（对齐 2:1 原始比例）
-- Scheduling: 30 场景（随机）
-- Game: 30 地图 = 15×15 各 15（对齐 1:1 原始比例）
+- Reasoning: 30 tasks = 20 easy + 10 hard (matching the original 2:1 ratio).
+- Scheduling: 30 randomly selected scenarios.
+- Game: 30 maps = 15 of each 15×15 size (matching the original 1:1 ratio).
 """
 import json
 import random
@@ -74,11 +74,11 @@ def main():
         "game": {"n": len(g_ids), "ids": g_ids},
     }
     (OUT / "selection_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
-    print(f"挑选完成，输出目录: {OUT}")
-    print(f"  Reasoning: {len(r_ids)} 题")
-    print(f"  Scheduling: {len(s_ids)} 场景")
-    print(f"  Game: {len(g_ids)} 地图")
-    print(f"  合计: {len(r_ids) + len(s_ids) + len(g_ids)} 个任务")
+    print(f"Selection complete; output directory: {OUT}")
+    print(f"  Reasoning: {len(r_ids)} tasks")
+    print(f"  Scheduling: {len(s_ids)} scenarios")
+    print(f"  Game: {len(g_ids)} maps")
+    print(f"  Total: {len(r_ids) + len(s_ids) + len(g_ids)} tasks")
 
 
 if __name__ == "__main__":

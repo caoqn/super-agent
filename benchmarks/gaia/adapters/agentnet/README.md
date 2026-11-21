@@ -1,47 +1,47 @@
 # AgentNet × GAIA
 
-AgentNet 在 GAIA 上的基准适配器源码。运行包由仓库根目录的 `scripts/prepare_agentnet.py` 组装生成。
+This is the GAIA benchmark adapter for AgentNet. The run package is assembled by `scripts/prepare_agentnet.py` from the repository root.
 
-## 目录结构
+## Directory layout
 
 ```
-agentnet_gaia_run/（生成后的运行目录）
-├── src/                # AgentNet 核心（agentgraph / experiment / pool 等）
-├── models/             # AgentNet 模型（agent_dag / experience_pool）
-├── prompt/             # prompt 集
-├── config/             # 配置（setting.py + experiment/*.yaml）
-├── evaluator/          # 评测器
-├── utils/              # 执行器 / 结果提取等工具
-├── gaia/               # GAIA 适配层（dataset / executor / llm / tools / scorer 等）
-├── methods/agentnet/   # 仓库 methods/agentnet/ 中的共享方法组件
-├── run_gaia.py         # 运行入口
-├── run_gaia.sh         # 一键脚本（建 venv + 装依赖 + 冒烟 + 全量）
-├── monitor_gaia.py     # 运行监视器（只读）
-├── requirements.txt          # 完整依赖
-├── requirements_bench.txt    # benchmark 运行所需最小依赖
+agentnet_gaia_run/ (generated run directory)
+├── src/                # AgentNet core (agentgraph / experiment / pool, etc.)
+├── models/             # AgentNet models (agent_dag / experience_pool)
+├── prompt/             # Prompt collection
+├── config/             # Configuration (setting.py + experiment/*.yaml)
+├── evaluator/          # Evaluators
+├── utils/              # Executors, result extraction, and other utilities
+├── gaia/               # GAIA integration (dataset / executor / llm / tools / scorer, etc.)
+├── methods/agentnet/   # Shared method components from methods/agentnet/
+├── run_gaia.py         # Run entry point
+├── run_gaia.sh         # One-command setup, dependency installation, smoke test, and full run
+├── monitor_gaia.py     # Read-only run monitor
+├── requirements.txt          # Full dependencies
+├── requirements_bench.txt    # Minimum benchmark runtime dependencies
 └── README.md
 ```
 
-## 准备
+## Setup
 
-先按仓库根目录 README 组装 AgentNet 运行目录，再进入对应的运行目录。
+First assemble the AgentNet run directory as described in the repository-root README, then enter the generated directory.
 
-1. **依赖**（Python 3.10+）：
+1. **Dependencies** (Python 3.10+):
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements_bench.txt
 ```
 
-2. **GAIA 数据集**（需 Hugging Face 授权）：
+2. **GAIA dataset** (Hugging Face access required):
 
 ```bash
 huggingface-cli download gaia-benchmark/GAIA --repo-type dataset --local-dir 2023
 ```
 
-放在本包根目录下，使结构为 `agentnet_gaia_run/2023/validation/metadata.parquet`。
+Place the data under the package root so that `agentnet_gaia_run/2023/validation/metadata.parquet` exists.
 
-3. **配置 `.env`**（本包根目录）：
+3. **Configure `.env`** (in the package root):
 
 ```
 LLM_BASE_URL=...
@@ -49,24 +49,24 @@ LLM_API_KEY=...
 LLM_MODEL=deepseek-v4.1-flash
 LLM_PRICE_INPUT_PER_1M=...
 LLM_PRICE_OUTPUT_PER_1M=...
-SERPER_API_KEY=...    # 或 TAVILY_API_KEY，搜索工具用
+SERPER_API_KEY=...    # Or TAVILY_API_KEY for search tools.
 ```
 
-## 运行
+## Run
 
 ```bash
-python run_gaia.py --limit 3                 # 冒烟 3 题
-python run_gaia.py                            # 全量 validation 165 题
-python run_gaia.py --levels 1                 # 只跑 L1
-python run_gaia.py --start 50 --limit 20      # 从第 50 题起跑 20 题
-python run_gaia.py --resume save/gaia_xxx     # 中断续跑
+python run_gaia.py --limit 3                 # Smoke test on 3 tasks.
+python run_gaia.py                            # Run all 165 validation tasks.
+python run_gaia.py --levels 1                 # Run Level 1 only.
+python run_gaia.py --start 50 --limit 20      # Run 20 tasks starting at index 50.
+python run_gaia.py --resume save/gaia_xxx     # Resume an interrupted run.
 ```
 
-输出在 `save/gaia_<时间>/`：`summary.json`（准确率/token/耗时/成本）、`results.jsonl`（逐题）、`calls.jsonl`（每次 LLM/工具调用明细）。
+Outputs are saved under `save/gaia_<timestamp>/`: `summary.json` (accuracy, tokens, elapsed time, and cost), `results.jsonl` (per-task results), and `calls.jsonl` (details for each LLM and tool call).
 
-## 说明
+## Notes
 
-- 图片题需 `LLM_SUPPORTS_VISION=1`；音频题需 `AUDIO_TRANSCRIBE_MODEL`。
-- 搜索默认用免 key 的 DuckDuckGo，建议填 Serper/Tavily key。
-- 评分用 GAIA 官方 quasi-exact-match。
-- `methods/agentnet/` 中的共享实现由组装脚本带入运行包；`gaia/` 中保留上游 AgentNet 兼容导入所需的模块。
+- Set `LLM_SUPPORTS_VISION=1` for image tasks and configure `AUDIO_TRANSCRIBE_MODEL` for audio tasks.
+- Search uses DuckDuckGo without an API key by default; a Serper or Tavily key is recommended.
+- Scoring uses the official GAIA quasi-exact-match metric.
+- The assembly script copies shared components from `methods/agentnet/` into the run package. The `gaia/` directory retains modules required for compatible AgentNet imports.

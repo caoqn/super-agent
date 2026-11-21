@@ -224,7 +224,7 @@ class Chat:
             timeout=3600,
         )
         request_kwargs.update(_merge_sampling_kwargs(self._deterministic_request_kwargs(), sampling_override))
-        # 关思考（flash 推理模型开思考会超时）；通过环境变量控制
+        # Disable thinking by default for Flash models; allow an environment override.
         if _env_bool('MASBENCH_DISABLE_THINKING', False):
             request_kwargs['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self._create_completion(client, request_kwargs)

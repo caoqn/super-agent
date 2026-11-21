@@ -5,7 +5,7 @@ Use the official [GAIA dataset](https://huggingface.co/datasets/gaia-benchmark/G
 
 ## Super Agent adapter
 
-此目录保存 EvoTeam `test_100` 的冻结任务清单、校验和答案评分。题目与附件需由本地数据副本提供，数据许可及参考答案不应默认随代码公开。使用 `validate_data.py --evoteam-data /path/to/benchmarks/gaia` 校验 100 道题及附件；适配器位于 `benchmarks/gaia/adapters/super_agent/adapter.py`。
+This directory stores EvoTeam's frozen `test_100` task manifest, checksums, and answer-scoring data. Provide tasks and attachments from a local dataset copy; data licenses and reference answers should not be assumed to be redistributable with code. Run `validate_data.py --evoteam-data /path/to/benchmarks/gaia` to validate the 100 tasks and attachments. The adapter is at `benchmarks/gaia/adapters/super_agent/adapter.py`.
 
 Validate locally supplied data without starting a service:
 

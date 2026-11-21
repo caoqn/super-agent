@@ -5,11 +5,11 @@ Install and download data from the [official MAC-Bench repository](https://githu
 
 ## Super Agent adapter
 
-MAC-Bench 使用官方任务环境和评分器，主要指标是 Progress Score（PS）和 Resolution Rate（RR）。本目录不包含任务数据或官方评分实现；请使用独立的 [MAC-Bench 官方仓库](https://github.com/rzchen777-wq/MAC_Bench)，固定其代码及数据版本。
+MAC-Bench uses the official task environment and evaluator. Its primary metrics are Progress Score (PS) and Resolution Rate (RR). This directory does not include task data or the official evaluator; use the separate [MAC-Bench repository](https://github.com/rzchen777-wq/MAC_Bench) and pin its code and data versions.
 
-`benchmarks/macbench/adapters/super_agent/adapter.py` 调用 MAC-Bench 官方 `superagent` 基线和评测器。配置文件位于 `methods/super_agent/config/macbench.yaml`，默认会传给官方评测器；它记录模型连接、统一 backbone、共享 episode world 和单次生成上限；任务预算通过命令行设置。
+`benchmarks/macbench/adapters/super_agent/adapter.py` invokes the official MAC-Bench `superagent` baseline and evaluator. Its configuration is in `methods/super_agent/config/macbench.yaml` and is passed to the evaluator by default. It records model connectivity, the shared backbone, the shared episode world, and the per-generation limit. Set task budgets through command-line options.
 
-官方要求 Linux、Python 3.11+、Node.js 24+、pnpm，以及 Modal 或 Daytona 环境。请根据官方文档安装 `.[modal,agents,superagent]` 或对应 Daytona 依赖，并在官方 Superagent 目录安装 pnpm 依赖；配置模型和环境凭据并下载数据。示例：
+The official setup requires Linux, Python 3.11+, Node.js 24+, pnpm, and either Modal or Daytona. Follow the upstream documentation to install `.[modal,agents,superagent]` or the corresponding Daytona dependencies, then install pnpm dependencies in the official Superagent directory. Configure model and environment credentials and download the data. Example:
 
 ```sh
 python benchmarks/macbench/adapters/super_agent/adapter.py \
@@ -18,6 +18,6 @@ python benchmarks/macbench/adapters/super_agent/adapter.py \
   --max-seconds 7200 --method-config methods/super_agent/config/macbench.yaml --dry-run
 ```
 
-去掉 `--dry-run` 才会实际评测。上游目录、环境、数据及凭据目前未配置；本入口尚未完成端到端验证。最终 PS/RR、用量及轨迹以官方输出为准。
+Remove `--dry-run` to run the evaluation. The upstream checkout, environment, data, and credentials are not configured here, and this entry point has not completed end-to-end validation. Treat the official output as the source of final PS/RR metrics, usage, and traces.
 
-MAC-Bench 的官方 `superagent` 实现自带其任务环境、router、worker、subagent 和评分器；本适配器只负责固定上游 checkout、传递 YAML 配置和预算，并保存官方输出。
+The official MAC-Bench `superagent` implementation includes its task environment, router, workers, subagents, and evaluator. This adapter pins the upstream checkout, passes the YAML configuration and budgets, and saves the official output.

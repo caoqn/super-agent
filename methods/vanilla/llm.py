@@ -1,9 +1,9 @@
-"""ReAct 适配层 —— OpenAI 兼容 chat 客户端（纯标准库，无第三方依赖）。
+"""OpenAI-compatible chat client for the Vanilla baseline (standard library only).
 
-复用 AgentNet 验证过的调用约定：
-- base 取自 LLM_BASE_URL ，端点 {base}/chat/completions
-- 模型 deepseek-v4.1-flash 是推理模型，默认开思考会超时，故固定 payload["thinking"]={"type":"disabled"}
-- 逐次调用累计 prompt/completion token 与成本（CNY，单价取自 .env）
+Uses the calling convention validated with AgentNet:
+- Reads the base URL from LLM_BASE_URL and calls {base}/chat/completions.
+- Disables thinking for deepseek-v4.1-flash by default to avoid timeouts.
+- Tracks prompt/completion tokens and cost per call (CNY rates from .env).
 """
 import json
 import os
@@ -25,7 +25,7 @@ def _load_env() -> dict:
             continue
         k, v = line.split("=", 1)
         k = k.strip()
-        v = v.split(" #")[0].strip()  # 去掉行尾注释
+        v = v.split(" #")[0].strip()  # Remove trailing comments.
         env[k] = v
     return env
 
@@ -41,7 +41,7 @@ MAX_RETRIES = int(_ENV.get("LLM_MAX_RETRIES", "6"))
 
 
 class Usage:
-    """一次任务的 token / 成本 / 耗时累计。"""
+    """Accumulate token usage, cost, and elapsed time for one task."""
 
     def __init__(self):
         self.prompt_tokens = 0
@@ -80,7 +80,7 @@ def _post(payload: dict):
     req = urllib.request.Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
     req.add_header("Accept", "application/json")
-    # Cloudflare 前置的中转会拒绝默认 Python-urllib UA（error 1010）
+    # Cloudflare-fronted gateways may reject the default Python urllib user agent (error 1010).
     req.add_header("User-Agent", "OpenAI/Python 1.54.0")
     if KEY:
         req.add_header("Authorization", f"Bearer {KEY}")
@@ -89,9 +89,9 @@ def _post(payload: dict):
 
 
 def complete(messages, max_tokens=1024, temperature=0.0) -> tuple:
-    """调用 chat/completions，返回 (content, prompt_tokens, completion_tokens)。
+    """Call chat/completions and return (content, prompt_tokens, completion_tokens).
 
-    带重试；失败抛 RuntimeError。
+    Retries failures and raises RuntimeError when all attempts fail.
     """
     payload = {
         "model": MODEL,
@@ -118,7 +118,7 @@ def complete(messages, max_tokens=1024, temperature=0.0) -> tuple:
             except Exception:
                 pass
             last_err = f"HTTP {e.code}: {body}"
-        except Exception as e:  # 超时 / 连接重置 / 坏 JSON
+        except Exception as e:  # Timeout, connection reset, or invalid JSON.
             last_err = str(e)
         time.sleep(min(20, 2 ** attempt))
-    raise RuntimeError(f"LLM 调用失败（重试 {MAX_RETRIES} 次）: {last_err}")
+    raise RuntimeError(f"LLM request failed after {MAX_RETRIES} retries: {last_err}")

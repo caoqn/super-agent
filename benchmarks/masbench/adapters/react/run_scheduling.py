@@ -1,9 +1,6 @@
-"""ReAct 适配 —— MASBench Scheduling（30 场景）。
+"""ReAct coordinator for 30 MASBench Scheduling scenarios.
 
-单 ReAct agent 扮演协调者，工具 free_slots[member_id] 查询某成员的可行空闲段（基于
-官方模拟同款的 Member*_final_schedule.json + 全局不可用时段），推理出共同 20 分钟会议
-时间，Finish[Day D HH:MM-HH:MM] 提交。评分严格复刻官方 _evaluate_against_ground_truth：
-解析槽位 -> 转 10 分钟 units -> 精确匹配 task_plans.solutions。
+A single ReAct agent acts as a coordinator. The free_slots[member_id] tool queries a member's available intervals using the official Member*_final_schedule.json format and global unavailable intervals. The agent selects a shared 20-minute meeting time and submits it with Finish[Day D HH:MM-HH:MM]. Scoring matches the official _evaluate_against_ground_truth procedure: parse the time slot, convert it to 10-minute units, and compare it exactly with task_plans.solutions.
 """
 import glob
 import json
@@ -24,7 +21,7 @@ MAX_STEPS = 15
 MAX_TOKENS = 1024
 DURATION_MIN = 20
 
-# 官方 _global_rules_text：所有人不可用时段（分钟）。
+# Global unavailability intervals in minutes, matching official _global_rules_text.
 GLOBAL_BLOCKED = [(0, 420), (420, 480), (720, 840), (1080, 1200)]
 
 SYSTEM = """Solve a meeting-scheduling task by interleaving Thought, Action, Observation steps. You are a single coordinator agent.
@@ -57,7 +54,7 @@ def _parse_dur(s: str):
 
 
 def _free_gaps(schedule: dict) -> dict:
-    """返回 {day: [(start_min, end_min), ...]}，仅含 >= DURATION_MIN 的空闲段。"""
+    """Return {day: [(start_min, end_min), ...]} for gaps at least DURATION_MIN long."""
     days = {}
     for act in schedule.get("activities", []):
         d = act.get("date")
@@ -89,7 +86,7 @@ def _free_gaps(schedule: dict) -> dict:
 
 
 def _parse_slot(text: str):
-    """复刻官方 _parse_day_slot 正则。"""
+    """Use the official _parse_day_slot regular expression."""
     if not text:
         return None
     m = re.search(
@@ -102,7 +99,7 @@ def _parse_slot(text: str):
 
 
 def _evaluate(final_text: str, scenario: Path) -> str:
-    """复刻官方 _evaluate_against_ground_truth 的精确匹配。"""
+    """Match the official _evaluate_against_ground_truth exact slot evaluation."""
     gt_path = scenario / "task_plans"
     if not gt_path.exists():
         return "no_ground_truth"
@@ -144,13 +141,13 @@ def run_one(scenario: Path):
         for d in sorted(free_cache[mid]):
             for a, b in free_cache[mid][d]:
                 parts.append(f"Day {d} {_min_to_hhmm(a)}-{_min_to_hhmm(b)}")
-        return "; ".join(parts) if parts else "(无 ≥20 分钟空闲段)"
+        return "; ".join(parts) if parts else "(No available interval of at least 20 minutes)"
 
     def free_slots(args):
         mid = (args[0] if args else "").strip()
         if mid not in free_cache:
-            return f"未知成员 '{mid}'，只能查询 1..5。"
-        return f"Member{mid} 空闲段（≥20 分钟）: {fmt_gaps(mid)}"
+            return f"Unknown member '{mid}'; query a member from 1 to 5."
+        return f"Member{mid} available intervals (at least 20 minutes): {fmt_gaps(mid)}"
 
     tools = {"free_slots": free_slots}
     member_names = ", ".join(f"Member{i}" for i in range(1, 6))
@@ -194,7 +191,7 @@ def main():
               f"steps={rec['steps']} tok={rec['total_tokens']} {rec['wall_s']}s", flush=True)
 
     ok = sum(1 for r in recs if r["status"] == "ok")
-    print(f"\n=== Scheduling 汇总 ===\n场景 {len(recs)}  成功(ok) {ok}  成功率 {ok / len(recs):.1%}" if recs else "无")
+    print(f"\n=== Scheduling summary ===\nScenarios {len(recs)}  Succeeded (ok) {ok}  Success rate {ok / len(recs):.1%}" if recs else "None")
 
 
 if __name__ == "__main__":

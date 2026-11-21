@@ -87,13 +87,13 @@ def _http_get(url, timeout=30, headers=None):
 
 
 def _is_pdf(data):
-    """靠文件头魔数判断，不信 URL 后缀也不信 Content-Type（很多服务器两者都是错的）。"""
+    """Detect PDFs by magic bytes; URL suffixes and Content-Type can be misleading."""
     return data[:5] == b"%PDF-"
 
 
 def _pdf_text(data):
     if not _is_pdf(data):
-        # 服务器可能把 .pdf 链接重定向到 HTML 落地页/错误页，别让 pypdf 抛出硬错误
+        # A PDF URL may redirect to an HTML page; avoid passing that response to pypdf.
         text = html_to_text(data.decode("utf-8", "ignore"))
         return (text + "\n\n[note: this response was not a PDF file despite the URL]") if text \
             else "[note: the server returned no readable text for this PDF URL]"
@@ -273,7 +273,7 @@ class ToolBox:
         try:
             data, ctype = _http_get(url, timeout=40)
         except urllib.error.HTTPError as e:
-            # 明确告诉模型为什么失败，它才知道该换源而不是反复重试同一个 URL
+            # Explain failures so the model can switch sources instead of repeating the same URL.
             hint = {401: "login required", 403: "the site blocks automated access",
                     404: "page not found", 429: "rate limited"}.get(e.code, "request rejected")
             return f"ERROR: HTTP {e.code} ({hint}) for {url} — use a different source for this fact."

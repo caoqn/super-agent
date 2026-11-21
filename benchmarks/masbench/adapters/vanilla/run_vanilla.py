@@ -1,12 +1,11 @@
-"""Vanilla（原装智能体）适配 —— MASBench 90 题基线。
+"""Single-call MASBench baseline with all task evidence supplied in one prompt.
 
-口径：单轮 LLM 调用、无 ReAct 循环、无工具调用。把任务相关信息一次性全部
-放进 prompt，模型直接输出最终答案/计划。评分与 ReAct 完全同口径：
-- Reasoning：复用官方 cal_f1_score
-- Scheduling：复用 run_scheduling 的槽位→units 精确匹配
-- Game：把模型输出的一整套动作计划重放进 run_game 的 GridWorld 物理回放，再用同一 score() 计分
+Protocol: one LLM call, with no ReAct loop or tool calls. All task information is provided in one prompt, and the model returns its final answer or plan. Scoring matches ReAct exactly:
+- Reasoning: reuse the official cal_f1_score.
+- Scheduling: reuse run_scheduling's exact slot-to-units matching.
+- Game: replay the complete model-generated action plan in run_game's GridWorld and apply the same score() function.
 
-输出：results/vanilla_{reasoning,scheduling,game}_results.jsonl
+Outputs: results/vanilla_{reasoning,scheduling,game}_results.jsonl
 """
 import json
 import argparse
@@ -22,12 +21,12 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REACT_ADAPTER))
 sys.path.insert(0, str(HERE))
 
-from methods.vanilla.llm import complete, Usage  # noqa: E402   # 本目录的 llm.py
+from methods.vanilla.llm import complete, Usage  # noqa: E402   # this adapter's llm.py
 MAX_TOKENS = 2048
 
 
 # --------------------------------------------------------------------------
-# Reasoning（vanilla：两方证据 + 问题一次性给出，直接答）
+# Reasoning: provide both evidence sets and the question in one prompt.
 # --------------------------------------------------------------------------
 REASON_SYSTEM = """You are a question-answering assistant. Answer the question using ONLY the evidence provided below. Be complete but concise; reproduce the relevant facts (names, materials, functions, locations) exactly as stated in the evidence."""
 
@@ -59,7 +58,7 @@ def run_reasoning_one(item):
 
 
 # --------------------------------------------------------------------------
-# Scheduling（vanilla：5 人空闲段一次性给出，直接出槽位）
+# Scheduling: provide all five members free slots in one prompt.
 # --------------------------------------------------------------------------
 SCHED_SYSTEM = """You are a meeting scheduler. Below are the free (available) time intervals of five members. Find ONE common 20-minute time slot where ALL five members are free, and output it in exactly the format "Day D HH:MM-HH:MM" (e.g. Day 3 09:50-10:10). Output only that slot, nothing else."""
 
@@ -101,7 +100,7 @@ def run_scheduling_one(scenario):
 
 
 # --------------------------------------------------------------------------
-# Game（vanilla：全图一次性给出，直接出整套动作计划，回放计分）
+# Game: provide the map and replay the complete generated action plan.
 # --------------------------------------------------------------------------
 GAME_SYSTEM = """You control an agent in a grid world. You can see the entire map. Output the full sequence of commands to collect resources and deliver them to tables.
 
@@ -127,7 +126,7 @@ ITEM_SYM = {"wood": "w", "sand": "s", "stone": "S"}
 
 
 def _full_map_desc(world):
-    # 完整网格（北=+y 在顶部）
+    # Full grid, with north (+y) at the top.
     rows = []
     for y in range(world.h, 0, -1):
         row = []
@@ -167,7 +166,7 @@ def _full_map_desc(world):
 
 
 def _parse_plan(text):
-    # 全文扫描命令（容忍模型夹杂推理/编号/代码块）
+    # Scan the full response for commands, allowing reasoning, numbering, and code fences.
     actions = []
     pat = re.compile(
         r"\b(move\s+(?:up|down|left|right))"
@@ -197,7 +196,7 @@ def run_game_one(map_path):
     wall = time.time() - t0
     usage = Usage(); usage.add(pt, ct)
 
-    # 回放计划（非法动作忽略）
+    # Replay the plan, ignoring invalid actions.
     plan = _parse_plan(final)
     for a in plan:
         if a[0] == "move":
@@ -215,7 +214,7 @@ def run_game_one(map_path):
 
 
 # --------------------------------------------------------------------------
-# 主入口
+# Entry point.
 # --------------------------------------------------------------------------
 def _load_task_helpers(task):
     """Load benchmark modules only for the selected task, after CLI parsing."""
@@ -288,4 +287,4 @@ if __name__ == "__main__":
         "game": "vanilla_game_results.jsonl",
     }
     recs = _run(task, names[task])
-    print(f"\n=== vanilla {task} 完成：{len(recs)} 条 ===")
+    print(f"\n=== vanilla {task} completed: {len(recs)} records ===")

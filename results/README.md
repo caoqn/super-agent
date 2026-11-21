@@ -1,3 +1,3 @@
-# 实验输出
+# Experiment outputs
 
-此目录用于本地汇总评测结果，不提交生成数据。Evoteam 的原始输出、断点和版本链由外部方法运行时管理，默认路径见 methods/Evoteam/README.md。
+This directory is for locally collected evaluation results; generated data is not committed. EvoTeam raw outputs, checkpoints, and version history are managed by the external method runtime. See `methods/Evoteam/README.md` for the default path.

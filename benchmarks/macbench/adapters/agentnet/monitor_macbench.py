@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MAC-Bench 运行监视器：只读。用法: python3 monitor_macbench.py [结果目录]"""
+"""Read-only MAC-Bench run monitor. Usage: python monitor_macbench.py [result_dir]."""
 import json
 import os
 import subprocess
@@ -58,24 +58,24 @@ def main():
     n = len(recs)
     ps_vals = [r.get("ps") or 0 for r in recs]
     rr_vals = [r.get("rr") or 0 for r in recs]
-    print(f"== MAC-Bench 监视 {time.strftime('%H:%M:%S')} ==")
-    print(f"目录: {rel}")
-    print(f"进程: {'运行中 PID ' + pid if pid else '未在运行'}")
-    print(f"已完成: {n} 题")
+    print(f"== MAC-Bench monitor {time.strftime('%H:%M:%S')} ==")
+    print(f"Directory: {rel}")
+    print(f"Process: {'running PID ' + pid if pid else 'not running'}")
+    print(f"Completed: {n} tasks")
     if n:
-        print(f"PS 均值: {sum(ps_vals)/n:.3f}   RR 均值: {sum(rr_vals)/n:.3f}")
-        print(f"PS>0 的题数: {sum(1 for p in ps_vals if p > 0)}/{n}")
-        # 每题的 PS
+        print(f"Mean PS: {sum(ps_vals)/n:.3f}   Mean RR: {sum(rr_vals)/n:.3f}")
+        print(f"Tasks with PS>0: {sum(1 for p in ps_vals if p > 0)}/{n}")
+        # Per-task PS values.
         for r in recs:
             print(f"  {r.get('task_id','?'):30s} PS={r.get('ps')} RR={r.get('rr')} {r.get('stop_reason','')}")
         cost = sum(r.get("cost") or 0 for r in recs)
-        print(f"累计成本约: ¥{cost:.2f}")
+        print(f"Estimated cost: ¥{cost:.2f}")
     else:
-        print("还没有完成的题（第一题可能仍在沙箱冷启动）")
-    # 是否有失败
+        print("No completed tasks yet (the first sandbox may still be starting)")
+    # Report unsuccessful episodes.
     errs = [r for r in recs if r.get("status") not in ("completed", None)]
     if errs:
-        print(f"非 completed 状态: {len(errs)} 题")
+        print(f"Non-completed tasks: {len(errs)} tasks")
     return 0
 
 

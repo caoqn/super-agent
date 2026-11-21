@@ -1,7 +1,7 @@
-"""MASBench MainAgent（编排器）prompt builder。
+"""Build the MASBench MainAgent prompt.
 
-MainAgent 的职责：把题目拆成子任务，delegate 给 ReActAgent 子代理执行，
-子代理用 finish 汇报，MainAgent 最终 complete 提交答案。
+The MainAgent decomposes each task and delegates subtasks to ReActAgent subagents.
+Subagents report with finish, and the MainAgent submits the final answer with complete.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _format_tools(tools: List[Any]) -> str:
 
 
 class MASBenchMainAgentPrompt:
-    """统一的 MainAgent prompt，适用于 Reasoning / Scheduling / Game 三类任务。"""
+    """Build a shared manager prompt for Reasoning, Scheduling, and Game."""
 
     @staticmethod
     def build_prompt(

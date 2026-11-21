@@ -1,10 +1,10 @@
-"""用 AgentNet 跑 MAS-Bench Reasoning 任务的适配脚本。
+"""Run MASBench Reasoning through the shared AgentNet client.
 
-- 复用 MAS-Bench 的数据加载、prompt、评分（F1）
-- 用 `methods/agentnet/llm.py`（关思考 + 中转）替代 openai 客户端
-- 通过 `methods/agentnet/tracker.py` 记录每次调用的 token / 成本 / 耗时
+- Reuses MAS-Bench data loading, prompts, and F1 scoring.
+- Uses `methods/agentnet/llm.py` (thinking disabled with gateway support) instead of the OpenAI client.
+- Uses `methods/agentnet/tracker.py` to record tokens, cost, and elapsed time for each call.
 
-用法（在 Reasoning/ 目录下）：
+Usage (from the Reasoning/ directory):
   python run_agentnet_reasoning.py --num-samples 1 --max-rounds 6 --seed 42
 """
 import argparse
@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-# AgentNet 适配层（打包后 gaia/ 位于本包根目录）
+# Shared AgentNet support is imported from the evaluation repository.
 AGENTNET = str(Path(__file__).resolve().parents[1])
 REPO_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(REPO_ROOT))
@@ -34,7 +34,7 @@ from src.agents import BaseAgent  # noqa: E402
 
 
 class AgentNetAgent(BaseAgent):
-    """MAS-Bench 的 agent 接口，但 LLM 调用走 AgentNet 的共享方法实现。"""
+    """Implement the MASBench agent interface with the shared AgentNet client."""
 
     def __init__(self, name: str, max_tokens: int = 1024):
         super().__init__(name=name)
@@ -58,13 +58,13 @@ class AgentNetAgent(BaseAgent):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--num-samples", type=int, default=1, help="-1 = 全部 300 题")
+    p.add_argument("--num-samples", type=int, default=1, help="-1 = all 300 tasks")
     p.add_argument("--max-rounds", type=int, default=6)
     p.add_argument("--max-tokens", type=int, default=1024)
     p.add_argument("--mode", default="context", choices=["context", "support"])
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--out", default=None, help="输出 jsonl 路径")
-    p.add_argument("--data", default=None, help="数据文件路径（默认 MASBench_selected_30）")
+    p.add_argument("--out", default=None, help="Output JSONL path")
+    p.add_argument("--data", default=None, help="Input data path (default: MASBench_selected_30)")
     args = p.parse_args()
 
     data_path = args.data or (HERE.parent / "MASBench_selected_30/Reasoning/reasoning_subset.json")
@@ -77,7 +77,7 @@ def main():
     if not out_path.is_absolute():
         out_path = HERE / out_path
 
-    # 断点续跑：跳过已有结果里的 item_id
+    # Resume by skipping item_id values already recorded.
     done_ids = set()
     if out_path.exists():
         with open(out_path, encoding="utf-8") as f:
@@ -136,7 +136,7 @@ def main():
         "total_wall_s": round(total_time, 1),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
-    print(f"输出: {out_path}")
+    print(f"Output: {out_path}")
 
 
 if __name__ == "__main__":

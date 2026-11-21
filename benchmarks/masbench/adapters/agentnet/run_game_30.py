@@ -1,6 +1,6 @@
-"""批量跑 MAS-Bench Game 30 地图（Python 3.10 环境 + flash 关思考）。
+"""Run 30 MASBench Game maps in subprocesses with thinking disabled.
 
-每个地图 subprocess 跑 eval.py，收集 game_log 的 score + agent_log 的 token + 耗时。
+Runs eval.py in a subprocess for each map and collects the game_log score, agent_log token usage, and elapsed time.
 """
 import glob
 import json
@@ -18,9 +18,9 @@ GAME = ROOT / "Game"
 MAPS = sorted((ROOT / "MASBench_selected_30/Game/maps").glob("*.json"))
 PY = sys.executable
 MODEL = "deepseek-v4.1-flash"
-# 完整实验预算 50 轮（eval.py 默认），不传 --max_round
+# Use the default 50-round experiment budget; do not pass --max_round.
 def collect_result(new_run_dirs):
-    """从最新 run 目录读 score + tokens。"""
+    """Read scores and token usage from the latest run directory."""
     if not new_run_dirs:
         return 0, 0
     rd = sorted(new_run_dirs)[-1]
@@ -38,7 +38,7 @@ def collect_result(new_run_dirs):
             if isinstance(d, list):
                 tokens = sum((r.get("total_llm_tokens") or 0) for r in d)
     except Exception as e:
-        print(f"  [warn] 读结果失败: {e}")
+        print(f"  [warn] Failed to read result: {e}")
     return score, tokens
 
 
@@ -71,10 +71,10 @@ def main():
     tot_score = sum(r["score"] for r in recs)
     tot_tok = sum(r["tokens"] for r in recs)
     tot_time = sum(r["wall_s"] for r in recs)
-    print(f"\n=== 汇总 ===")
-    print(f"地图数: {len(recs)}  总分: {tot_score}  平均分: {tot_score/len(recs):.2f}")
-    print(f"总 token: {tot_tok:,}  总耗时: {tot_time/60:.1f} min")
-    print(f"输出: {out}")
+    print(f"\n=== Summary ===")
+    print(f"Maps: {len(recs)}  Total score: {tot_score}  Mean score: {tot_score/len(recs):.2f}")
+    print(f"Total tokens: {tot_tok:,}  Total elapsed: {tot_time/60:.1f} min")
+    print(f"Output: {out}")
 
 
 if __name__ == "__main__":

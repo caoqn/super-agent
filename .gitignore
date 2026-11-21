@@ -1,5 +1,5 @@
 # ============================================================
-# 敏感配置（含 API key，绝不提交）
+# Secrets and local API configuration
 # ============================================================
 .env
 
@@ -15,7 +15,7 @@ build/
 dist/
 .tox/
 
-# 测试 / 类型检查 / lint 缓存
+# Test, type-check, and lint caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -23,7 +23,7 @@ dist/
 htmlcov/
 
 # ============================================================
-# 虚拟环境
+# Virtual environments
 # ============================================================
 .venv/
 .venv*/
@@ -36,7 +36,7 @@ env/
 .DS_Store
 
 # ============================================================
-# 日志
+# Logs
 # ============================================================
 *.log
 logs/
@@ -44,7 +44,7 @@ log_*.txt
 MASBench-main/txt_logs/
 
 # ============================================================
-# 数据集（体积大，需重新下载；不含代码）
+# Downloaded datasets (code remains tracked)
 # ============================================================
 MAC_Bench-1.0/data/
 MAC_Bench-1.0/.cache/
@@ -53,7 +53,7 @@ ReAct-master/data/
 2023/
 
 # ============================================================
-# 实验输出（可重新生成）
+# Generated experiment outputs
 # ============================================================
 AgentNet-main/AgentNet_Code/save/
 AgentNet-main/AgentNet_Code/log/
@@ -68,7 +68,7 @@ MASBench-main/MASBench_selected_30/game_results.jsonl
 MASBench-main/MASBench_selected_30/scheduling_results.jsonl
 
 # ============================================================
-# 数据集 / 容器归档产物
+# Dataset and container archives
 # ============================================================
 *.tar
 *.tar.gz

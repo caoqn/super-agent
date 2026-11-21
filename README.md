@@ -16,7 +16,7 @@ Keep this project's method implementations and benchmark adapters in Git; instal
 
 ## Configuration
 
-Copy `.env.example` to `.env` at the repository root and set your OpenAI-compatible base URL and API key. MASBench scripts default to DeepSeek Flash; set provider-specific cost rates when measuring cost. Do not commit `.env`.
+Copy `.env.example` to `.env` at the repository root and set the API base URL and key required by the selected adapter. Add provider-specific settings when needed. Do not commit `.env`.
 
 ## AgentNet on GAIA and MAC-Bench
 
@@ -57,9 +57,9 @@ The benchmark-level notes are in [`benchmarks/masbench/README.md`](benchmarks/ma
 
 The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<benchmark>/adapters/super_agent/` directories. Their external upstream revisions and YAML configurations are recorded in [methods/super_agent](methods/super_agent/README.md). GAIA and MASBench use the external DSH service; MAC-Bench invokes its own official Superagent implementation. Install runtimes and obtain benchmark data separately. GAIA and MASBench YAML files document settings passed as command-line arguments; the MAC-Bench method YAML is loaded by its adapter.
 
-## Evoteam
+## EvoTeam
 
-EvoTeam benchmark adapters are located in [benchmarks/gaia/adapters/evoteam](benchmarks/gaia/adapters/evoteam), [benchmarks/macbench/adapters/evoteam](benchmarks/macbench/adapters/evoteam), and [benchmarks/masbench/adapters/evoteam](benchmarks/masbench/adapters/evoteam). See [methods/Evoteam/README.md](methods/Evoteam/README.md) for shared source setup. The method source is referenced at [the compatible caoqn/EvoTeam branch](https://github.com/caoqn/EvoTeam/tree/individual-benchmark-v1) and is not included here. Initial agent pools for all three datasets are included; frozen test pools are not. With Python 3.11, run `python scripts/setup_evoteam.py` to install and validate the pinned source version, then configure the API and external data as described in the method guide. Train from an initial pool with `python scripts/run.py --config configs/Evoteam_macbench_train.json`; append `--dry-run --max-items 1` to check data without calling the model.
+EvoTeam adapters are available under `benchmarks/<benchmark>/adapters/evoteam/`. The method implementation remains external; see [the EvoTeam guide](methods/Evoteam/README.md) for source setup, configuration, and evaluation instructions.
 
 ## ReAct and AOrchestra on MAC-Bench
 

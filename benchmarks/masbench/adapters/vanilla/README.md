@@ -1,6 +1,6 @@
 # Vanilla Agent Adapter
 
-The **Vanilla (unmodified agent) baseline** implementation for 90 MASBench tasks.
+The **Vanilla (unmodified agent) baseline** for MASBench.
 
 ## Protocol
 
@@ -34,9 +34,9 @@ Scoring functions are **reused** from the three runners in `../react/` (`run_rea
 
 ```bash
 cd benchmarks/masbench/adapters/vanilla
-python3 run_vanilla.py reasoning    # Reasoning (30 tasks, single call)
-python3 run_vanilla.py scheduling   # Scheduling (30 scenarios, single call)
-python3 run_vanilla.py game         # Game (30 maps, single call)
+python3 run_vanilla.py reasoning
+python3 run_vanilla.py scheduling
+python3 run_vanilla.py game
 ```
 
 Resume is automatic: tasks already present in the result file are skipped.

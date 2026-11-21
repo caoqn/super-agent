@@ -1,8 +1,8 @@
 # AgentNet × MAS-Bench
 
-AgentNet run package for the three MAS-Bench task families: Reasoning, Scheduling, and Game.
+AgentNet integration for the three MAS-Bench task families: Reasoning, Scheduling, and Game.
 
-Includes the AgentNet LLM client, official MAS-Bench code, adapter scripts, and a 90-task sample manifest (seed=42).
+Uses the shared 90-task sample selection recorded in the benchmark-level manifest. Shared method code and task data are maintained separately from this adapter.
 
 ## Directory layout
 
@@ -54,13 +54,13 @@ LLM_MODEL=deepseek-v4.1-flash
 After preparing the sampled data as described in the repository-root README, run these commands from the repository root:
 
 ```bash
-# Reasoning (30 tasks, F1 metric)
+# Reasoning
 python benchmarks/masbench/adapters/agentnet/Reasoning/run_agentnet_reasoning.py --num-samples -1 --seed 42
 
-# Scheduling (30 scenarios, success-rate metric)
+# Scheduling
 python benchmarks/masbench/adapters/agentnet/run_scheduling_30.py
 
-# Game (30 maps, delivery-score metric)
+# Game
 python benchmarks/masbench/adapters/agentnet/run_game_30.py
 ```
 

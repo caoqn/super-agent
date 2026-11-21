@@ -17,8 +17,8 @@ The fetch script installs the revision pinned in MAC-Bench's `configs/baselines/
 
 ```bash
 python benchmarks/macbench/adapters/aorchestra/run.py \
-  --upstream /path/to/MAC_Bench --task-id op26_business_finance_001 \
+  --upstream /path/to/MAC_Bench --task-id TASK_ID \
   --output-dir /path/to/results/aorchestra --dry-run
 ```
 
-The wrapper reads paper task budgets from the pinned MAC-Bench checkout by default. For a development task absent from that file, provide all four budget flags explicitly. Remove `--dry-run` to execute. The launcher verifies both source revisions and delegates to MAC-Bench's native evaluator. Configure identical model and budget values when comparing baselines. The checked-in YAML retains MAC-Bench's initial method settings; paper-run configuration changes should be recorded explicitly.
+The wrapper reads task budgets from the pinned MAC-Bench checkout by default; provide explicit budget flags when the selected task has no recorded defaults. Remove `--dry-run` to execute. The launcher verifies source revisions and delegates to MAC-Bench's evaluator. Record any changes to the checked-in method configuration with the run settings.

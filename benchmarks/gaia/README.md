@@ -1,11 +1,17 @@
 # GAIA
 
-Use the official [GAIA dataset](https://huggingface.co/datasets/gaia-benchmark/GAIA); data is not stored here. The AgentNet-specific loader, scorer, and runner are in `adapters/agentnet/`.
+Obtain benchmark data from the [official GAIA dataset](https://huggingface.co/datasets/gaia-benchmark/GAIA); raw data is not stored here. Adapter-specific loaders, scorers, and runners are documented alongside each adapter.
 
 
-## Super Agent adapter
+## Super Agent adapter data
 
-This directory stores EvoTeam's frozen `test_100` task manifest, checksums, and answer-scoring data. Provide tasks and attachments from a local dataset copy; data licenses and reference answers should not be assumed to be redistributable with code. Run `validate_data.py --evoteam-data /path/to/benchmarks/gaia` to validate the 100 tasks and attachments. The adapter is at `benchmarks/gaia/adapters/super_agent/adapter.py`.
+The task manifest and validation helper in this directory support the Super Agent adapter. They record the task IDs, checksums, and reference-answer metadata used by that adapter, but do not include task content or attachments. Supply those from an authorized local copy of GAIA and validate them against the manifest:
+
+```sh
+python3 benchmarks/gaia/validate_data.py --metadata /path/to/metadata.jsonl --attachments /path/to/attachments
+```
+
+The Super Agent adapter is at `benchmarks/gaia/adapters/super_agent/adapter.py`.
 
 Validate locally supplied data without starting a service:
 

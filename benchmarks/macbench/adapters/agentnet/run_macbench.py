@@ -26,7 +26,7 @@ REPO_ROOT = next(
 )
 sys.path.insert(0, REPO_ROOT)
 FUXIAN = os.path.abspath(os.path.join(HERE, ".."))
-# MAC_Bench-1.0 的位置：默认在父目录下，也可用 MAC_BENCH_ROOT 环境变量显式指定
+# Locate the external MAC-Bench checkout; MAC_BENCH_ROOT overrides the default.
 MAC_ROOT = os.environ.get("MAC_BENCH_ROOT", os.path.join(FUXIAN, "MAC_Bench-1.0"))
 
 from methods.agentnet.envfile import load_env  # noqa: E402
@@ -118,7 +118,7 @@ def main():
         ep_dir = os.path.join(out, rec.task_id)
         t0 = time.time()
         with TRACKER.task_scope(rec.task_id):
-            # 本地 Docker 沙盒模式：设 MAC_BENCH_LOCAL_DOCKER=1 时用本地 docker 容器替代 Modal 云
+            # MAC_BENCH_LOCAL_DOCKER=1 selects local Docker instead of Modal.
             if os.environ.get("MAC_BENCH_LOCAL_DOCKER") == "1":
                 from gaia.docker_backend import DockerSandboxBackend
                 task = open_task(rec, os.path.join(ep_dir, "runtime"), backend=DockerSandboxBackend())

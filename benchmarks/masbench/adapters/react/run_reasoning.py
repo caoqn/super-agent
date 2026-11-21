@@ -1,7 +1,7 @@
-"""ReAct 适配 —— MASBench Reasoning（30 题）。
+"""Single-agent ReAct adapter for 30 MASBench Reasoning tasks.
 
-单 ReAct agent，工具 lookup[agent_a]/lookup[agent_b] 检索两方证据，Finish[answer] 提交答案。
-评分复用官方 src.metrics.cal_f1_score。
+A single ReAct agent retrieves evidence from both parties with lookup[agent_a]/lookup[agent_b] and submits the answer with Finish[answer].
+Scoring reuses the official src.metrics.cal_f1_score function.
 """
 import json
 import sys
@@ -46,7 +46,7 @@ Action: Finish[the complete answer]"""
 
 
 def _fmt_evidence(blocks):
-    """context 条目形如 [title, [sentence, ...]]。"""
+    """Format context entries of the form [title, [sentence, ...]]."""
     lines = []
     for title, sents in blocks:
         lines.append(f"- {title}: " + " ".join(sents))
@@ -63,7 +63,7 @@ def run_one(item, required_calls=None):
     def lookup(args):
         who = (args[0] if args else "").strip().lower()
         if who not in evidence:
-            return f"未知主体 '{who}'，只能 lookup[agent_a] 或 lookup[agent_b]。"
+            return f"Unknown party '{who}'; use lookup[agent_a] or lookup[agent_b]."
         return evidence[who] or "(empty)"
 
     tools = {"lookup": lookup}
@@ -115,13 +115,13 @@ def main(out_name="reasoning_results.jsonl", required_calls=None):
 
     scored = [r for r in recs if r["f1"] is not None]
     if scored:
-        print(f"\n=== Reasoning 汇总 ===\n题数 {len(scored)}  mean F1 = "
+        print(f"\n=== Reasoning summary ===\nCount {len(scored)}  mean F1 = "
               f"{sum(r['f1'] for r in scored) / len(scored):.4f}")
 
 
 if __name__ == "__main__":
-    # 用法: python3 run_reasoning.py            -> 原始无约束跑
-    #      python3 run_reasoning.py constrained -> 强制先查两方证据再 Finish
+    # Usage: python run_reasoning.py for the unconstrained run.
+    # python run_reasoning.py constrained requires both evidence lookups before Finish.
     if len(sys.argv) > 1 and sys.argv[1] == "constrained":
         main(out_name="reasoning_results_constrained.jsonl",
              required_calls=[("lookup", "agent_a"), ("lookup", "agent_b")])

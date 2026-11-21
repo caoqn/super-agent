@@ -20,10 +20,10 @@ from .tracker import TRACKER
 CTX = {"context": None}
 ENGINEERING = {"product_application", "platform_data", "developer_release"}
 ABILITIES = ["planning", "data_reconciliation", "record_editing", "coding", "testing"]
-# 资源约束（均可在 .env 覆盖，写进论文方法部分）：
-#   MAC_TOOL_OUTPUT_CHARS   单个工具观测结果的字符上限
-#   MAC_MAX_HISTORY_ROUNDS  执行器工具循环只保留最近 N 轮交互（其余压缩为占位）
-#   MAC_BUDGET_RESERVE_TOKENS 剩余 token 预算低于此值时停止工具、强制收尾
+# Resource limits can be overridden in .env; record them with experiment settings.
+# MAC_TOOL_OUTPUT_CHARS limits characters in one tool observation.
+# MAC_MAX_HISTORY_ROUNDS retains recent rounds and replaces older ones with placeholders.
+# MAC_BUDGET_RESERVE_TOKENS stops tools and forces finalization below the reserve.
 TOOL_OUT_CHARS = int(os.environ.get("MAC_TOOL_OUTPUT_CHARS", 4000))
 MAX_HISTORY_ROUNDS = int(os.environ.get("MAC_MAX_HISTORY_ROUNDS", 8))
 BUDGET_RESERVE_TOKENS = int(os.environ.get("MAC_BUDGET_RESERVE_TOKENS", 150000))
@@ -64,8 +64,8 @@ def _role(system_prompt):
 
 
 def _default_max_tokens():
-    # MAC-Bench 走 LiteLLM/网关，开思考时需要比 GAIA 更大的输出预算；
-    # 用独立变量，避免改动 GAIA 方案 A 的 LLM_MAX_TOKENS=2048。
+    # MAC-Bench uses LiteLLM and needs a larger output budget when thinking is enabled.
+    # Use a separate limit so GAIA LLM_MAX_TOKENS=2048 stays independent.
     return int(os.environ.get("MAC_BENCH_LLM_MAX_TOKENS", os.environ.get("LLM_MAX_TOKENS", 4096)))
 
 
@@ -76,9 +76,9 @@ def _complete(messages, tools=None, role=None, max_tokens=None):
         reply = ctx.client.complete(messages, tools=tools,
                                     max_tokens=max_tokens or _default_max_tokens())
     except Exception as e:
-        # MAC-Bench 的 LiteLLM 客户端在输出撞 max_tokens（finish_reason=length）时抛
-        # ModelOutputTruncatedError。这里降级重试一次：不带 tools、明确要求只给结论，
-        # 让模型在更短的历史上直接输出，避免一个截断就把整个 episode 判 0 分。
+        # LiteLLM raises ModelOutputTruncatedError when finish_reason=length.
+        # Retry once without tools, requesting only the conclusion on shorter history.
+        # This avoids scoring an entire episode as zero after one truncated response.
         if type(e).__name__ == "ModelOutputTruncatedError" and tools:
             from mac_bench.runtime.llm.client import ChatMessage
             flat = []
@@ -116,14 +116,14 @@ def _remaining_tokens():
     return budget.limits.max_tokens - used
 
 
-_DSML_OPEN = "｜｜"  # 全角竖线 U+FF5C，DeepSeek 的 DSML 用双写全角竖线做分隔
+_DSML_OPEN = "｜｜"  # DeepSeek DSML uses doubled full-width vertical bars (U+FF5C).
 
 
 def _parse_dsml(text):
-    """把模型输出的 DSML 工具调用文本解析成 [{"name","args"}]；没有则返回 []。"""
+    """Parse DSML tool text into name/args dictionaries; return an empty list if absent."""
     import re
     calls = []
-    # 先切出每个 invoke 块，兼容 <｜｜DSML｜｜ invoke ...> ... </｜｜DSML｜｜ invoke>
+    # Split invoke blocks, including the doubled full-width-bar DSML syntax.
     for block in re.findall(r"<\s*｜｜DSML｜｜\s*invoke\s+name=\"([^\"]+)\">(.*?)<\s*/｜｜DSML｜｜\s*invoke\s*>",
                             text, re.S):
         name, body = block[0], block[1]
@@ -163,17 +163,17 @@ def executor_response(system_prompt, query_prompt):
                "Only when the changes really exist in the environment, reply without a tool call and end with "
                "'RESULT: <report of what you changed>'. Always call tools with native function calling only; "
                "never write tool calls as DSML/XML/markdown text.")
-    # system + user 保持不变；工具交互在 rounds 里累积，超出上限的旧轮被压缩成一行占位
+    # Keep system/user messages; replace older tool rounds with one-line placeholders.
     head = [ChatMessage("system", sys_p), ChatMessage("user", query_prompt)]
     rounds = []
     max_steps = int(os.environ.get("MAC_MAX_TOOL_STEPS", 80))
 
     def _run_dsml(content, step):
-        """解析 content 里的 DSML 工具调用并执行，返回 (handled, assistant_msg, tool_msgs)。"""
+        """Execute DSML calls from content; return (handled, assistant_msg, tool_msgs)."""
         dsml_calls = _parse_dsml(content)
         if not dsml_calls:
             return False, None, []
-        # 合成 tool_calls，让后续 tool 消息有合法的前置 assistant tool_calls
+        # Create assistant tool_calls so subsequent tool messages have valid call references.
         syn_calls = [{"id": f"dsml_{step}_{i}", "type": "function",
                       "function": {"name": c["name"], "arguments": json.dumps(c["args"], ensure_ascii=False)}}
                      for i, c in enumerate(dsml_calls)]
@@ -220,8 +220,8 @@ def executor_response(system_prompt, query_prompt):
             content = (reply.content or "").strip()
             handled, assistant, tool_msgs = _run_dsml(content, step)
             if handled:
-                # 模型把工具调用写成了 DSML 文本而非原生 function calling：
-                # 解析出来继续执行，绝不把这串标记当成最终答案。
+                # The model emitted DSML text instead of native function calls.
+                # Parse and execute it rather than treating tool markup as the final answer.
                 rounds.append((assistant, tool_msgs))
                 _compact(step)
                 continue
@@ -245,7 +245,7 @@ def executor_response(system_prompt, query_prompt):
                 text = text[:TOOL_OUT_CHARS] + '... [truncated]'
             tool_msgs.append(ChatMessage("tool", text, tool_call_id=call["id"]))
         rounds.append((assistant, tool_msgs))
-        # 只保留最近 N 轮完整内容，更早的压缩成占位，避免历史无限膨胀
+        # Keep recent rounds intact and replace older rounds to bound history growth.
         _compact(step)
     head.append(ChatMessage("user", "Tool-step limit for this agent reached. Summarise what you changed, ending with 'RESULT: ...'."))
     reply = _complete(head + _flatten_rounds(rounds), role="executor")

@@ -1,12 +1,12 @@
-"""在 MASBench 90 题上运行 AOrchestra（MainAgent + ReActAgent 子代理编排）。
+"""Run AOrchestra MainAgent and ReActAgent subagents on 90 MASBench tasks.
 
-用法:
+Usage:
     python run_masbench.py --task reasoning|scheduling|game|all
                           [--limit N] [--model deepseek-v4.1-flash]
                           [--max-attempts 5] [--concurrency 1]
 
-不改动 AOrchestra 官方文件；通过环境变量提供 LLM 配置（AUTOENV_*）。
-评分口径对齐 MASBench 官方。
+This runner does not modify official AOrchestra files. Configure the LLM through AUTOENV_* environment variables.
+Scoring follows the official MASBench protocol.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# ---- 路径 ----
+# Paths.
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = Path(__file__).resolve().parents[4]
 AORCHESTRA = REPO_ROOT / "AOrchestra-main"
@@ -53,7 +53,7 @@ DEFAULT_MODEL = _ENV.get("LLM_MODEL", "deepseek-v4.1-flash")
 
 
 def _setup_llm_env(model: str, base: str, key: str):
-    """通过环境变量让 AOrchestra 的 LLMsConfig.default() 能解析到模型配置。"""
+    """Expose model settings through the environment for LLMsConfig.default()."""
     os.environ.setdefault("AUTOENV_OPENAI_API_KEY", key)
     os.environ.setdefault("AUTOENV_OPENAI_BASE_URL", base)
     os.environ.setdefault("AUTOENV_OPENAI_MODELS", model)
@@ -61,8 +61,8 @@ def _setup_llm_env(model: str, base: str, key: str):
     os.environ.setdefault("AUTOENV_OPENAI_TOP_P", "1")
 
 
-# openai SDK 默认 connect timeout 仅 5s，中转站直连较慢会 ConnectTimeout。
-# AOrchestra 官方 async_llm.py 不传 timeout，此处仅在适配层入口 patch 默认值（不改官方文件）。
+# Increase the SDK default five-second connection timeout for slower gateways.
+# Set the client default at the adapter entry point; upstream async_llm.py supplies no timeout.
 import httpx  # noqa: E402
 import openai._base_client as _obc  # noqa: E402
 _obc.DEFAULT_TIMEOUT = httpx.Timeout(timeout=600.0, connect=60.0, read=600.0, write=600.0, pool=60.0)
@@ -79,11 +79,12 @@ from src.metrics import cal_f1_score  # noqa: E402
 
 
 class SubAgentRunner(Runner):
-    """子代理的标准 agent-environment 循环（与官方 terminalbench_runner.SubAgentRunner 等价）。
+    """Run the agent-environment loop with current_step and max_steps.
 
-    不 import aorchestra.runners 包，因为其 __init__.py 会连带 import swebench_runner
-    -> benchmark.benchmark，后者在 Python 3.10 下因 `Type[Agent]`（Agent 是模块）报错。
-    这里直接继承 benchmark.common.runner.Runner 复刻其逻辑，并正确传 current_step/max_steps。
+    Do not import aorchestra.runners: its __init__.py also imports swebench_runner
+    -> benchmark.benchmark, which fails on Python 3.10 because `Type[Agent]` is given
+    a module instead of a type. Inherit directly from benchmark.common.runner.Runner
+    and reproduce its logic while passing current_step/max_steps correctly.
     """
 
     async def run(self, agent, env: Environment) -> LevelResult:
@@ -135,7 +136,7 @@ class SubAgentRunner(Runner):
 from masbench_env import ReasoningEnv, SchedulingEnv, GameEnv  # noqa: E402
 from masbench_prompt import MASBenchMainAgentPrompt  # noqa: E402
 
-# ---- 数据加载 ----
+# Load task data.
 SEL = MASBENCH / "MASBench_selected_30"
 
 
@@ -213,14 +214,14 @@ async def run_one(spec, main_model, sub_models, max_attempts, sub_runner, cost_m
     attempts_detail = []
 
     async def _step_retry(agent, retries=2):
-        """MainAgent.step 重试：LLM 偶发空响应会让官方 parse_json_response 崩溃。"""
+        """Retry MainAgent.step when an empty response causes upstream JSON parsing to fail."""
         last = None
         for r in range(retries + 1):
             try:
                 return await agent.step(None, [])
             except Exception as e:
                 last = e
-                logger.warning(f"[MASBench] MainAgent.step 异常(第{r+1}次): {type(e).__name__}: {str(e)[:200]}")
+                logger.warning(f"[MASBench] MainAgent.step error (attempt {r+1}): {type(e).__name__}: {str(e)[:200]}")
                 await asyncio.sleep(2)
         raise last
 
@@ -250,7 +251,7 @@ async def run_one(spec, main_model, sub_models, max_attempts, sub_runner, cost_m
 
     wall = time.time() - start
 
-    # 评分
+    # Score the result.
     record = {
         "task": spec["task"],
         "task_id": tid,
@@ -273,7 +274,7 @@ async def run_one(spec, main_model, sub_models, max_attempts, sub_runner, cost_m
             "target": env.target,
         })
 
-    # 累计 token / 成本（CostMonitor 记录所有 LLM 调用，含 MainAgent + 子代理 + trace 总结）
+    # CostMonitor includes manager, subagent, and trace-summary model calls.
     record["total_input_tokens"] = cost_monitor.total_input_tokens
     record["total_output_tokens"] = cost_monitor.total_output_tokens
     record["total_tokens"] = cost_monitor.total_input_tokens + cost_monitor.total_output_tokens
@@ -308,7 +309,7 @@ def main():
     args = ap.parse_args()
 
     _setup_llm_env(args.model, DEFAULT_BASE, DEFAULT_KEY)
-    # 强制清掉会让 httpx 崩溃的代理变量（NO_PROXY 里含 [::1]）
+    # Remove proxy variables containing [::1] to avoid httpx parsing errors.
     for k in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy",
               "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy", "grpc_proxy"]:
         os.environ.pop(k, None)
@@ -323,13 +324,13 @@ def main():
             levels = levels[: args.limit]
         seen = load_results(task)
         pending = [l for l in levels if spec_id(l) not in seen]
-        print(f"\n=== [{task}] 共 {len(levels)} 题，已完成 {len(seen)}，待跑 {len(pending)} ===", flush=True)
+        print(f"\n=== [{task}] {len(levels)} tasks; completed {len(seen)}; pending {len(pending)} ===", flush=True)
         if not pending:
             continue
 
         out_path = HERE / "results" / f"{task}.jsonl"
         sub_runner = SubAgentRunner()
-        # 子代理最大步数：由 env.get_basic_info().max_steps 控制，SubAgentRunner 传 current_step/max_steps
+        # Pass current_step/max_steps; env.get_basic_info().max_steps bounds subagent steps.
 
         async def run_pending():
             sem = asyncio.Semaphore(max(1, args.concurrency))
@@ -358,7 +359,7 @@ def main():
 
         asyncio.run(run_pending())
 
-    print("\n全部完成。结果在 results/ 下。")
+    print("\nCompleted all tasks. Results are under results/.")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
-"""跑一个 Game 地图，正确收集输入/输出 token。
+"""Run one MASBench Game map and collect cumulative input/output token usage.
 
-monkeypatch MASLogger.log_agent_action，让每条 agent_log 额外记录：
-    usage_prompt_tokens / usage_completion_tokens / usage_total_tokens（该 agent 累计值）。
-跑完后取每个 agent 最后一轮的累计值，得到准确的输入/输出 token。
+Monkey-patches MASLogger.log_agent_action so each agent_log also records:
+    usage_prompt_tokens / usage_completion_tokens / usage_total_tokens (cumulative per agent).
+After the run, reads each agent's final cumulative values to get input and output token counts.
 
-用法: python run_game_one_token.py <map.json>
+Usage: python run_game_one_token.py <map.json>
 """
 import os
 import sys
@@ -17,7 +17,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(ROOT
 GAME = os.path.join(ROOT, "Game")
 sys.path.insert(0, GAME)
 
-# 清代理（httpx 会因 NO_PROXY 里的 [::1] 崩溃）
+# Remove proxy variables: NO_PROXY entries containing [::1] can break httpx.
 for k in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy",
           "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy", "grpc_proxy"]:
     os.environ.pop(k, None)
@@ -60,7 +60,7 @@ def _patched(self, env, agent_id, prompt, response, action, message,
 
 MASLogger.log_agent_action = _patched
 
-# ---- 解析 map 参数（复现 eval.py 逻辑）----
+# Parse map arguments using the eval.py convention.
 with open(map_path) as f:
     custom_map = json.load(f)
 map_cfg = custom_map.get("map", {})
@@ -78,7 +78,7 @@ if not (isinstance(item_cap, int) and item_cap > 0):
     item_cap = 4
 max_round = 50
 
-# ---- 生成 log_dir（和 eval.py 相同格式）----
+# Build log_dir using the eval.py naming convention.
 from datetime import datetime  # noqa: E402
 timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S_%f')
 map_label = os.path.splitext(os.path.basename(map_path))[0]
@@ -86,7 +86,7 @@ log_dir = os.path.join(GAME, ".preset_logs", f"{timestamp}_{map_label}_base_deep
 
 before = set(glob.glob(os.path.join(GAME, ".preset_logs", "*")))
 
-# ---- 跑 ----
+# Run the episode.
 t0 = time.time()
 MASFramework.submit(
     "exp_1",
@@ -109,10 +109,10 @@ MASFramework.submit(
 MASFramework.run_all(max_parallel=1)
 wall = time.time() - t0
 
-# ---- 收集结果 ----
+# Collect results.
 al_files = sorted(glob.glob(os.path.join(log_dir, "agent_log*.json")))
 if not al_files:
-    print("ERROR: 没有 agent_log 在", log_dir)
+    print("ERROR: No agent_log in", log_dir)
     sys.exit(1)
 
 d = json.load(open(al_files[-1]))
@@ -129,7 +129,7 @@ for r in d:
 prompt_total = 0
 comp_total = 0
 total_total = 0
-print(f"\n=== 各 agent 最后一轮累计 token ===")
+print(f"\n=== Final cumulative tokens per agent ===")
 for ag in sorted(by_agent):
     seq = sorted(by_agent[ag], key=lambda x: x[0])
     last = seq[-1][1]
@@ -139,12 +139,12 @@ for ag in sorted(by_agent):
     prompt_total += pt
     comp_total += ct
     total_total += tt
-    print(f"  {ag}: 输入(prompt)={pt:,} 输出(completion)={ct:,} 总={tt:,}")
+    print(f"  {ag}: Input (prompt)={pt:,} Output (completion)={ct:,} total={tt:,}")
 
-print(f"\n=== 汇总 ===")
+print(f"\n=== Summary ===")
 print(f"  map: {os.path.basename(map_path)}  (num_agents={num_agents}, view={view_size}, cap={item_cap})")
 print(f"  score: {score}")
-print(f"  输入 token: {prompt_total:,}")
-print(f"  输出 token: {comp_total:,}")
-print(f"  总 token: {total_total:,}")
-print(f"  耗时: {wall:.1f}s")
+print(f"  Input tokens: {prompt_total:,}")
+print(f"  Output tokens: {comp_total:,}")
+print(f"  Total tokens: {total_total:,}")
+print(f"  Elapsed: {wall:.1f}s")

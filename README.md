@@ -59,7 +59,7 @@ The GAIA, MASBench and MAC-Bench adapters are in their respective `benchmarks/<b
 
 ## Evoteam
 
-Evoteam 的 benchmark 适配器分别位于 [benchmarks/gaia/adapters/evoteam](benchmarks/gaia/adapters/evoteam)、[benchmarks/macbench/adapters/evoteam](benchmarks/macbench/adapters/evoteam) 和 [benchmarks/masbench/adapters/evoteam](benchmarks/masbench/adapters/evoteam)；公共源码接入说明见 [methods/Evoteam/README.md](methods/Evoteam/README.md)。方法源码引用 [caoqn/EvoTeam 的兼容分支](https://github.com/caoqn/EvoTeam/tree/individual-benchmark-v1)，不包含方法本体；保留三个数据集的初始 agent 池，不包含冻结测试池。使用 Python 3.11 执行 `python scripts/setup_evoteam.py` 自动安装并校验固定源码版本，再按方法说明配置 API 和外部数据。通过 `python scripts/run.py --config configs/Evoteam_macbench_train.json` 从初始池训练；追加 `--dry-run --max-items 1` 可先检查数据而不调用模型。
+EvoTeam benchmark adapters are located in [benchmarks/gaia/adapters/evoteam](benchmarks/gaia/adapters/evoteam), [benchmarks/macbench/adapters/evoteam](benchmarks/macbench/adapters/evoteam), and [benchmarks/masbench/adapters/evoteam](benchmarks/masbench/adapters/evoteam). See [methods/Evoteam/README.md](methods/Evoteam/README.md) for shared source setup. The method source is referenced at [the compatible caoqn/EvoTeam branch](https://github.com/caoqn/EvoTeam/tree/individual-benchmark-v1) and is not included here. Initial agent pools for all three datasets are included; frozen test pools are not. With Python 3.11, run `python scripts/setup_evoteam.py` to install and validate the pinned source version, then configure the API and external data as described in the method guide. Train from an initial pool with `python scripts/run.py --config configs/Evoteam_macbench_train.json`; append `--dry-run --max-items 1` to check data without calling the model.
 
 ## ReAct and AOrchestra on MAC-Bench
 

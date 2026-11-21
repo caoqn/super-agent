@@ -1,47 +1,47 @@
 # AgentNet × MAC-Bench
 
-AgentNet 在 MAC-Bench 上的基准适配器源码。运行包由仓库根目录的 `scripts/prepare_agentnet.py` 组装生成。
+This is the MAC-Bench benchmark adapter for AgentNet. The run package is assembled by `scripts/prepare_agentnet.py` from the repository root.
 
-## 目录结构
+## Directory layout
 
 ```
-agentnet_macbench_run/（生成后的运行目录）
-├── src/                # AgentNet 核心
-├── models/             # AgentNet 模型
-├── prompt/             # prompt 集
-├── config/             # 配置
-├── evaluator/          # 评测器
-├── utils/              # 工具
-├── gaia/               # MAC-Bench 适配层（macbench_adapter.py 等）及上游兼容模块
-├── methods/agentnet/   # 仓库 methods/agentnet/ 中的共享方法组件
-├── run_macbench.py     # 运行入口
-├── monitor_macbench.py # 运行监视器（只读）
+agentnet_macbench_run/ (generated run directory)
+├── src/                # AgentNet core
+├── models/             # AgentNet models
+├── prompt/             # Prompt collection
+├── config/             # Configuration
+├── evaluator/          # Evaluators
+├── utils/              # Utilities
+├── gaia/               # MAC-Bench integration (macbench_adapter.py, etc.) and compatibility modules
+├── methods/agentnet/   # Shared method components from methods/agentnet/
+├── run_macbench.py     # Run entry point
+├── monitor_macbench.py # Read-only run monitor
 ├── requirements.txt
 ├── requirements_bench.txt
 └── README.md
 ```
 
-## 准备
+## Setup
 
-先按仓库根目录 README 组装 AgentNet 运行目录，再进入对应的运行目录。
+First assemble the AgentNet run directory as described in the repository-root README, then enter the generated directory.
 
-1. **依赖**（Python 3.11+，MAC-Bench 要求）：
+1. **Dependencies** (Python 3.11+, required by MAC-Bench):
 
 ```bash
 python3.11 -m venv .venv311 && source .venv311/bin/activate
 pip install -r requirements_bench.txt
-pip install -e '../MAC_Bench-1.0[modal,agents]'   # 或 pip install mac-bench
+pip install -e '../MAC_Bench-1.0[modal,agents]'   # Or install the published package with pip install mac-bench.
 modal token new
-mac-bench data download                            # 下载任务与镜像
+mac-bench data download                            # Download tasks and container images.
 ```
 
-2. **MAC_Bench-1.0 位置**：默认取本包父目录下的 `MAC_Bench-1.0`，也可用环境变量覆盖：
+2. **MAC_Bench-1.0 location**: defaults to `MAC_Bench-1.0` next to the package; override it with an environment variable:
 
 ```bash
 export MAC_BENCH_ROOT=/path/to/MAC_Bench-1.0
 ```
 
-3. **配置 `.env`**（本包根目录）：
+3. **Configure `.env`** (in the package root):
 
 ```
 LLM_BASE_URL=...
@@ -51,20 +51,20 @@ LLM_PRICE_INPUT_PER_1M=...
 LLM_PRICE_OUTPUT_PER_1M=...
 ```
 
-## 运行
+## Run
 
 ```bash
-python run_macbench.py --task-ids op26_service_administration_007   # 先跑 1 个 dev 任务
-python run_macbench.py --split test                                  # 全部 test 任务
-python run_macbench.py --split test --warmup-dev                     # 先用 6 个 dev 任务进化
+python run_macbench.py --task-ids op26_service_administration_007   # Run one dev task first.
+python run_macbench.py --split test                                  # Run the full test split.
+python run_macbench.py --split test --warmup-dev                     # Evolve on 6 dev tasks before testing.
 ```
 
-输出在 `save/macbench_<时间>/`：`results.jsonl`（每任务 PS/RR/耗时/token/成本）、`summary.json`。
+Outputs are saved under `save/macbench_<timestamp>/`: `results.jsonl` (per-task PS/RR, elapsed time, tokens, and cost) and `summary.json`.
 
-默认预算与官方一致：1M tokens / 80 次模型调用 / 160 次工具调用 / 2400 秒。
+The default budget matches the upstream settings: 1M tokens / 80 model calls / 160 tool calls / 2400 seconds.
 
-## 说明
+## Notes
 
-- MAC-Bench 的官方指标是 **PS（Progress Score）** 与 **RR（Resolution Rate）**。
-- 模型请求走 `context.client`（计入 MAC-Bench 预算与 token 统计），动作走 `context.environment.call`。
-- `methods/agentnet/` 中的共享实现由组装脚本带入运行包；`gaia/` 中保留上游 AgentNet 兼容导入所需的模块。
+- The official MAC-Bench metrics are **PS (Progress Score)** and **RR (Resolution Rate)**.
+- Model requests use `context.client` and count toward MAC-Bench budgets and token statistics. Actions use `context.environment.call`.
+- The assembly script copies shared components from `methods/agentnet/` into the run package. The `gaia/` directory retains modules required for compatible AgentNet imports.

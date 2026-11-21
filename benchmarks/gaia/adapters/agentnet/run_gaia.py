@@ -35,7 +35,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 from methods.agentnet.envfile import load_env  # noqa: E402
 
-# 打包后本包即根目录：.env 与 GAIA 数据（2023/validation）都放在本包下
+# The assembled run directory contains .env and 2023/validation data.
 FUXIAN = HERE
 load_env([os.path.join(HERE, ".env"), os.path.join(os.path.dirname(HERE), ".env"), os.path.join(REPO_ROOT, ".env")])
 

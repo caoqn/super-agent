@@ -1,46 +1,46 @@
-# Skill-MAS 复现实验适配
+# Skill-MAS Reproduction Adapter
 
-本目录提供 [Skill-MAS](https://github.com/linhh29/Skill_MAS) 固定源码引用、本地兼容补丁、GAIA/MASBench/MACBench 适配器、划分清单和历史 frozen skill。上游源码运行时单独准备，不复制进本仓库。`upstream.json` 的 commit 来自原始源码 ZIP 注释，ZIP SHA-256 用于校验归档；commit 尚未通过在线 Git 记录独立核实。`patches/runtime.patch` 面向该归档生成。它不能证明历史实验运行时源码与固定快照完全一致；MACBench 结果目录映射也作过便携化修正。
+This directory provides a pinned source reference for [Skill-MAS](https://github.com/linhh29/Skill_MAS), local compatibility patches, GAIA/MASBench/MACBench adapters, split manifests, and historical frozen skills. Prepare the upstream source separately at runtime; it is not copied into this repository. The commit in `upstream.json` comes from a comment in the original source ZIP, and its SHA-256 verifies the archive; the commit has not been independently confirmed against online Git history. `patches/runtime.patch` targets that archive. It does not prove that the runtime source used in the historical experiments exactly matches the pinned snapshot; the MACBench result-directory mapping was also made portable.
 
-## 运行环境
+## Runtime Environment
 
-建议 Python 3.11。`environment/python-current-snapshot.txt` 是实验机器当前 `pip freeze`，不是历史运行时锁文件，也不是干净环境的最小 requirements。MACBench 的历史 Python 环境未能确认。发布前如需严格复现，应在目标平台新建虚拟环境、按上游和 benchmark 文档安装，并生成带 Python/OS/架构信息的独立锁文件。MASBench Game 额外依赖列于 `requirements/masbench-game.txt`；安装时需确认游戏依赖版本。MACBench 需要其 harness、任务服务和 Docker 环境；本仓库尚未记录历史镜像 digest。
+Python 3.11 is recommended. `environment/python-current-snapshot.txt` is the current `pip freeze` from the experiment machine, not a historical runtime lockfile or a minimal requirements file for a clean environment. The historical MACBench Python environment has not been confirmed. For strict reproduction, create a fresh virtual environment on the target platform, install dependencies according to the upstream and benchmark documentation, and produce a separate lockfile that records Python, OS, and architecture. Additional MASBench Game dependencies are listed in `requirements/masbench-game.txt`; verify their versions when installing. MACBench requires its harness, task services, and Docker environment; the historical image digest is not recorded here.
 
-## 数据准备
+## Data Preparation
 
-数据与任务包不包含在本仓库。数据下载、认证和许可遵循各 benchmark 官方项目。
+Datasets and task packages are not included in this repository. Follow each benchmark's official project for data downloads, authentication, and licensing.
 
-- **GAIA**：`--data-root` 目录须包含 `level_1_train_20.json`、`level_2_train_20.json`、`level_3_train_20.json` 与对应的 `level_{1,2,3}_test_100.json`。冻结清单中的训练 20 题、测试 100 题跨 level 汇总；附件应放在 `val_files/` 下，并保持 GAIA 原始附件布局。仓库没有 GAIA 原始数据文件和附件哈希，使用者需从获准来源准备并核对数据版本。
-- **MASBench**：`--data-root` 指向包含 `Reasoning/reasoning.json`、`Scheduling/`、`Game/custom_map/` 的根目录。仓库提供 18 条训练和 90 条测试 ID manifest；reasoning 划分排除测试题族，审计记录见 `splits/masbench/split_audit.json`。本地 MASBench 源目录无法提供干净 Git revision（Git 状态含大量未跟踪文件），需自行留存源文件哈希。运行脚本验证 ID 和顺序，缺失数据会失败。
-- **MACBench**：`--data-root` 指向任务 catalogue 数据目录或项目根目录。本仓库固定 48 个测试 ID、各 task world revision 及训练/测试设置。数据准备后需确认 `mac-bench` CLI、相关服务和 Docker 可用。已知数据 revision `425592652fc225292903c055e2c3a595b061a4a7` 不是 harness 代码版本或镜像 digest，后二者的历史记录缺失。
+- **GAIA**: `--data-root` must contain `level_1_train_20.json`, `level_2_train_20.json`, `level_3_train_20.json`, and the corresponding `level_{1,2,3}_test_100.json` files. The frozen manifests aggregate 20 training tasks and 100 test tasks across levels. Place attachments under `val_files/` and preserve the original GAIA attachment layout. The repository does not contain raw GAIA data or attachment hashes; obtain the data from an authorized source and verify its version.
+- **MASBench**: `--data-root` must point to a root containing `Reasoning/reasoning.json`, `Scheduling/`, and `Game/custom_map/`. The repository provides manifests for 18 training and 90 test IDs; the Reasoning split excludes test task families. See `splits/masbench/split_audit.json` for the audit. The local MASBench source directory has no clean Git revision because its Git status includes many untracked files, so retain source-file hashes yourself. The runner validates IDs and order and fails if data is missing.
+- **MACBench**: `--data-root` may point to a task catalogue directory or the project root. This repository pins 48 test IDs, each task's world revision, and the train/test settings. After preparing the data, verify that the `mac-bench` CLI, required services, and Docker are available. The known data revision `425592652fc225292903c055e2c3a595b061a4a7` is not the harness code version or image digest; historical records for both are missing.
 
-## 准备并运行
+## Prepare and Run
 
-在仓库根目录执行。归档须为固定上游版本 ZIP；省略 `--archive` 时准备脚本从固定 Git commit 克隆。目标目录必须是新建的 `Skill_MAS` 目录。
+Run these commands from the repository root. The archive must be a ZIP of the pinned upstream version; if `--archive` is omitted, the preparation script clones the pinned Git commit. The destination must be a new `Skill_MAS` directory.
 
 ```bash
 python3 -m venv .venv-skillmas
 source .venv-skillmas/bin/activate
 python -m pip install -r requirements/masbench-game.txt
-# 依照 Skill-MAS、GAIA、MACBench 官方说明安装其他 Python/系统依赖。
+# Install other Python and system dependencies according to the Skill-MAS, GAIA, and MACBench documentation.
 python scripts/prepare_skillmas.py --destination /path/to/work/Skill_MAS --archive /path/to/Skill_MAS-main.zip
 
 export OPENAI_API_KEY='your-key'
 export OPENAI_BASE_URL='https://your-openai-compatible-endpoint/v1'
 
-# 检查路径及题目清单，不发 API 请求
+# Validate paths and task manifests without making API requests.
 python scripts/run_skillmas.py --upstream /path/to/work/Skill_MAS --benchmark gaia --phase train --data-root /path/to/gaia --output /path/to/results --run-id gaia-k3 --validate-only
-# 训练后以产出的 SKILL.md 测试
+# Test with the SKILL.md produced by training.
 python scripts/run_skillmas.py --upstream /path/to/work/Skill_MAS --benchmark gaia --phase train --data-root /path/to/gaia --output /path/to/results --run-id gaia-k3
 python scripts/run_skillmas.py --upstream /path/to/work/Skill_MAS --benchmark gaia --phase test --data-root /path/to/gaia --output /path/to/results --run-id gaia-test --skill /path/to/SKILL.md
 ```
 
-将 `gaia` 替换为 `masbench` 或 `macbench`，并指定对应数据根目录。确保 API 服务端模型 ID 与配置 `deepseek-flash` 一致。各实验均为一轮进化：GAIA 20 题、每题 k=3；MASBench 18 题、每题 k=3；MACBench 6 个 dev 题、每题 k=2。测试集分别 100、90、48 题。并发和 timeout 参数见 `config/`。训练测试使用不同 run-id；恢复同一 run 时需保持配置不变。结果目录保存有效配置和 skill 哈希。
+Replace `gaia` with `masbench` or `macbench` and provide the matching data root. Ensure that the model ID exposed by the API server matches `deepseek-flash` in the configuration. Each experiment uses one evolution round: 20 GAIA tasks with k=3 per task, 18 MASBench tasks with k=3 per task, and 6 MACBench dev tasks with k=2 per task. The test sets contain 100, 90, and 48 tasks, respectively. Concurrency and timeout settings are in `config/`. Use different run IDs for training and testing; keep the configuration unchanged when resuming a run. The results directory stores the effective configuration and skill hash.
 
-历史 frozen skill 位于 `artifacts/{gaia,masbench,macbench}/SKILL.md`，SHA-256 见 `experiment_evidence.json`。测试历史结果时可将对应文件作为 `--skill`。MACBench 的另一组 manager/worker 实验不是这里的 Skill-MAS frozen-skill 测试。价格配置只用于估算，不代表服务账单。
+Historical frozen skills are in `artifacts/{gaia,masbench,macbench}/SKILL.md`; their SHA-256 values are in `experiment_evidence.json`. To test historical results, pass the corresponding file with `--skill`. A separate MACBench manager/worker experiment is not part of these Skill-MAS frozen-skill tests. Price settings are estimates and do not represent provider invoices.
 
-## 预算、限制与验证状态
+## Budgets, Limitations, and Validation Status
 
-训练的 `max_steps=300` 由 Skill-MAS pipeline 使用；测试工具轮数默认 `max_rounds=12`。timeout 为基础时间加 800 秒墙钟窗口，不是精确暂停 API 等待的双时钟。`max_output_tokens` 是单次响应限制，不是单题累计 token 限制。适配器不强制 MACBench 官方 token/call 预算，MACBench 当前 `admit_call` 也未执行调用计数。因此若研究要求遵守官方预算，应先补齐可审计的预算执行器。
+The Skill-MAS pipeline uses `max_steps=300` during training; the default test tool limit is `max_rounds=12`. The timeout adds an 800-second wall-clock window to the base time; it does not pause precisely during API waits. `max_output_tokens` limits a single response, not cumulative tokens for one task. The adapter does not enforce MACBench's official token/call budgets, and MACBench's current `admit_call` does not count calls. If the study requires official budget compliance, add an auditable budget executor first.
 
-本地检查通过固定 ZIP 校验和准备、六个 train/test 数据划分加载、ID/顺序核对，以及用 stub 替代执行的入口检查。没有发 API 请求，也未在干净机器完成 Docker、外部服务和真实 benchmark 的端到端测试。严格复现仍缺历史完整 Python 锁、MACBench harness commit 和镜像 digest、GAIA 数据与附件哈希，以及 MASBench 干净源码 revision。检查命令见 `environment/README.md`。
+Local checks passed for preparation with the pinned ZIP checksum, loading all six train/test splits, verifying IDs and order, and checking entry points with stubbed execution. No API requests were made, and Docker, external services, and real benchmarks have not been tested end to end on a clean machine. Strict reproduction still lacks the full historical Python lockfile, the MACBench harness commit and image digest, GAIA data and attachment hashes, and a clean MASBench source revision. See `environment/README.md` for the check commands.

@@ -1,6 +1,6 @@
-"""批量跑 MAS-Bench Scheduling 30 个场景（AgentNet 的 LLM 层 + flash 关思考）。
+"""Run 30 MASBench Scheduling scenarios with thinking disabled.
 
-每个场景调 simulate_meeting_qwen.py（关思考），收集 meta.json 的 evaluation + token + 耗时。
+Runs simulate_meeting_qwen.py for each scenario with thinking disabled, then collects the evaluation, token usage, and elapsed time from meta.json.
 """
 import glob
 import json
@@ -64,10 +64,10 @@ def main():
     ok = sum(1 for r in recs if r["status"] == "ok")
     tot_tok = sum(r["tokens"] or 0 for r in recs)
     tot_time = sum(r["wall_s"] for r in recs)
-    print(f"\n=== 汇总 ===")
-    print(f"场景数: {len(recs)}  成功(ok): {ok}  成功率: {ok/len(recs):.1%}")
-    print(f"总 token: {tot_tok:,}  总耗时: {tot_time/60:.1f} min")
-    print(f"输出: {out}")
+    print(f"\n=== Summary ===")
+    print(f"Scenarios: {len(recs)}  Succeeded (ok): {ok}  Success rate: {ok/len(recs):.1%}")
+    print(f"Total tokens: {tot_tok:,}  Total elapsed: {tot_time/60:.1f} min")
+    print(f"Output: {out}")
 
 
 if __name__ == "__main__":

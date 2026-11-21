@@ -1,7 +1,8 @@
-"""汇总 MASBench × AOrchestra 90 题结果，生成 REPORT.md 与 summary.json。
+"""Summarize AOrchestra MASBench results into REPORT.md and summary.json.
 
-成本按 .env 里的 CNY 单价计算（AOrchestra 官方 ModelPricing 无 deepseek-v4.1-flash，
-其 get_usage_summary().total_cost 为 0，故在此单独用单价折算）。
+Costs use the CNY rates in .env. The official AOrchestra ModelPricing does not include
+deepseek-v4.1-flash, so get_usage_summary().total_cost is zero; this script applies the
+configured rates separately.
 """
 import json
 from pathlib import Path
@@ -70,13 +71,13 @@ def main():
     game_mean = game_total / len(game) if game else None
 
     L = []
-    L.append("# AOrchestra × MASBench 90 题 实验报告\n")
-    L.append("- 方法：AOrchestra（MainAgent 编排 + ReActAgent 子代理），完整多智能体编排")
-    L.append("- 模型：deepseek-v4.1-flash（主/子代理同模型），温度 0")
-    L.append("- 数据：MASBench_selected_30（Reasoning/Scheduling/Game 各 30，seed=42）\n")
+    L.append("# AOrchestra × MASBench 90-task experiment report\n")
+    L.append("- Method: AOrchestra (MainAgent with ReActAgent subagents)")
+    L.append("- Model: deepseek-v4.1-flash for manager and subagents, temperature 0")
+    L.append("- Data: MASBench_selected_30 (30 tasks per category, seed=42)\n")
 
-    L.append("## 1. 结果概览\n")
-    L.append("| 任务 | 题数 | 主指标 | 总 token | 成本(CNY) | 耗时 |")
+    L.append("## 1. Overview\n")
+    L.append("| Task | Count | Metric | Total tokens | Cost (CNY) | Elapsed |")
     L.append("|---|---|---|---|---|---|")
 
     def row(name, st, metric):
@@ -84,7 +85,7 @@ def main():
 
     row("Reasoning", stats(reason), f"mean F1 = {mean_f1:.4f}" if mean_f1 is not None else "n/a")
     row("Scheduling", stats(sched), f"ok = {sched_ok}/{len(sched)}")
-    row("Game", stats(game), f"总分 {game_total}（均 {game_mean:.1f}）" if game_mean is not None else "n/a")
+    row("Game", stats(game), f"Total score {game_total} (mean {game_mean:.1f})" if game_mean is not None else "n/a")
 
     s_reason, s_sched, s_game = stats(reason), stats(sched), stats(game)
     tot = {
@@ -96,21 +97,21 @@ def main():
         "wall_s": s_reason.get("wall_s", 0) + s_sched.get("wall_s", 0) + s_game.get("wall_s", 0),
         "llm_calls": s_reason.get("llm_calls", 0) + s_sched.get("llm_calls", 0) + s_game.get("llm_calls", 0),
     }
-    L.append(f"| **合计** | {tot['n']} | — | {tot['total_tokens']:,} | ¥{tot['cost_cny']:.4f} | {tot['wall_s']/60:.1f} min |")
+    L.append(f"| **Total** | {tot['n']} | — | {tot['total_tokens']:,} | ¥{tot['cost_cny']:.4f} | {tot['wall_s']/60:.1f} min |")
     L.append("")
-    L.append(f"- 总 LLM 调用次数：{tot['llm_calls']:,}")
-    L.append(f"- token 明细：prompt {tot['input_tokens']:,} / completion {tot['output_tokens']:,}")
-    L.append(f"- 成本按 CNY 单价（input ¥{PRICE_IN*1e6:.3f}/M，output ¥{PRICE_OUT*1e6:.2f}/M）折算\n")
+    L.append(f"- Total LLM calls: {tot['llm_calls']:,}")
+    L.append(f"- Token breakdown: prompt {tot['input_tokens']:,} / completion {tot['output_tokens']:,}")
+    L.append(f"- Costs use CNY rates (input ¥{PRICE_IN*1e6:.3f}/M, output ¥{PRICE_OUT*1e6:.2f}/M)\n")
 
-    L.append("## 2. Reasoning（30 题，F1）\n")
-    L.append(f"- mean F1 = **{mean_f1:.4f}**（{len(scored)} 题有答案）" if mean_f1 is not None else "- 无结果")
-    L.append(f"- F1=1.0（完全正确）：{f1_1} 题")
+    L.append("## 2. Reasoning (30 tasks, F1)\n")
+    L.append(f"- mean F1 = **{mean_f1:.4f}** ({len(scored)} answered tasks)" if mean_f1 is not None else "- No results")
+    L.append(f"- F1=1.0 (exact): {f1_1} tasks")
 
-    L.append("\n## 3. Scheduling（30 场景）\n")
-    L.append(f"- 成功率（ok / 精确匹配官方 solutions）：**{sched_ok}/{len(sched)}**")
+    L.append("\n## 3. Scheduling (30 scenarios)\n")
+    L.append(f"- Success rate (ok / exact official solutions): **{sched_ok}/{len(sched)}**")
 
-    L.append("\n## 4. Game（30 地图，交付计分）\n")
-    L.append(f"- 总分：**{game_total}**，平均每地图 {game_mean:.1f}" if game_mean is not None else "- 无结果")
+    L.append("\n## 4. Game (30 maps, delivery score)\n")
+    L.append(f"- Total score: **{game_total}**, mean per map {game_mean:.1f}" if game_mean is not None else "- No results")
     if game:
         agg = {}
         for r in game:
@@ -120,13 +121,13 @@ def main():
         for r in game:
             for k, v in (r.get("target") or {}).items():
                 tgt[k] = v
-        L.append(f"- 交付汇总：{agg}")
-        L.append(f"- 目标：{tgt}")
+        L.append(f"- Delivery totals: {agg}")
+        L.append(f"- Targets: {tgt}")
 
-    L.append("\n## 5. 说明\n")
-    L.append("- 适配层位于 `benchmarks/masbench/adapters/aorchestra/`，未改动 AOrchestra 与 MASBench 官方文件。")
-    L.append("- 评分口径：Reasoning 官方 `cal_f1_score`；Scheduling 官方槽位精确匹配；Game 官方 enhanced-interaction 交付计分。")
-    L.append("- 逐题明细见 `results/{reasoning,scheduling,game}.jsonl`。")
+    L.append("\n## 5. Notes\n")
+    L.append("- Adapter: `benchmarks/masbench/adapters/aorchestra/`; upstream source files are unchanged.")
+    L.append("- Scoring: official Reasoning F1, exact Scheduling slots, and Game enhanced-interaction delivery rules.")
+    L.append("- Per-task results: `results/{reasoning,scheduling,game}.jsonl`.")
 
     report = "\n".join(L) + "\n"
     (RES / "REPORT.md").write_text(report, encoding="utf-8")
@@ -139,7 +140,7 @@ def main():
     }
     (RES / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(report)
-    print("已写入 results/REPORT.md 与 results/summary.json")
+    print("Wrote results/REPORT.md and results/summary.json")
 
 
 if __name__ == "__main__":

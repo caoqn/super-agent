@@ -1,3 +1,3 @@
 # Evoteam / macbench
 
-`adapter.py` 连接外部方法与评测环境，`run.py` 为入口。方法源码不在本仓库中；安装、版本兼容性和运行命令见 [Evoteam 说明](../../../../methods/Evoteam/README.md)。
+`adapter.py` connects the external method to the evaluation environment, and `run.py` is the entry point. Method source is not included in this repository. See the [EvoTeam method guide](../../../../methods/Evoteam/README.md) for installation, version compatibility, and run commands.

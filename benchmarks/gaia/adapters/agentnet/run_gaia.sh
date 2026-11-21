@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 用法: bash run_gaia.sh            # 先冒烟 3 题，再问你是否跑全量 165 题
-#       bash run_gaia.sh full       # 直接跑全量
+# Usage: bash run_gaia.sh            # Run 3 smoke tasks, then ask to run all 165 tasks
+#       bash run_gaia.sh full       # Run the full validation set
 set -e
 cd "$(dirname "$0")"
 if [ ! -d .venv ]; then
@@ -9,9 +9,9 @@ if [ ! -d .venv ]; then
   ./.venv/bin/pip install -r requirements_bench.txt
 fi
 PY=./.venv/bin/python
-if [ ! -f ../.env ]; then echo "请先: cp ../.env.example ../.env 并填写 LLM_API_KEY 等"; exit 1; fi
+if [ ! -f ../.env ]; then echo "First copy ../.env.example to ../.env and configure LLM_API_KEY"; exit 1; fi
 if [ "$1" != "full" ]; then
   $PY run_gaia.py --limit 3 --out save/gaia_smoke_$(date +%Y%m%d-%H%M%S)
-  read -p "冒烟通过？跑全量 165 题 [y/N] " yn; [ "$yn" = "y" ] || exit 0
+  read -p "Smoke check passed? Run all 165 tasks [y/N] " yn; [ "$yn" = "y" ] || exit 0
 fi
 $PY run_gaia.py

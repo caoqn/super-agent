@@ -1,19 +1,19 @@
-"""MASBench 三类任务的 AOrchestra Environment 适配层。
+"""AOrchestra environments for MASBench Reasoning, Scheduling, and Game.
 
-复用 AOrchestra 的 benchmark.common.env.Environment 接口：
+Uses the AOrchestra benchmark.common.env.Environment interface:
     get_basic_info() -> BasicInfo
     reset() -> Observation
     step(action) -> (observation, reward, done, info)
 
-SubAgent（ReActAgent）以 JSON action 形式输出：
+The SubAgent (ReActAgent) returns actions as JSON:
     {"action": "<tool_name>", "params": {...}, "memory": "..."}
-结束用 finish：
+It finishes with the finish action:
     {"action": "finish", "params": {"result": ..., "status": ..., "summary": ...}}
 
-评分口径严格对齐 MASBench 官方：
-    Reasoning  -> 官方 src.metrics.cal_f1_score
-    Scheduling -> 官方 _evaluate_against_ground_truth 槽位精确匹配
-    Game       -> 官方 enhanced-interaction 交付计分
+Scoring follows the official MASBench protocol:
+    Reasoning  -> official src.metrics.cal_f1_score
+    Scheduling -> exact slot matching in the official _evaluate_against_ground_truth
+    Game       -> official enhanced-interaction delivery score
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ SEL = MASBENCH / "MASBench_selected_30"
 # ---------------------------------------------------------------------------
 
 def _fmt_evidence(blocks):
-    """context 条目形如 [title, [sentence, ...]]。"""
+    """Format context entries of the form [title, [sentence, ...]]."""
     lines = []
     for title, sents in blocks:
         lines.append(f"- {title}: " + " ".join(sents))
@@ -43,7 +43,7 @@ def _fmt_evidence(blocks):
 
 
 class ReasoningEnv(Environment):
-    """两 agent 各持私有证据，检索后综合回答（QA）。"""
+    """Retrieve and combine the private evidence held by two agents to answer a question."""
 
     def __init__(self, item: dict):
         self.item_id = item.get("id")
@@ -133,7 +133,7 @@ class ReasoningEnv(Environment):
 # ---------------------------------------------------------------------------
 
 DURATION_MIN = 20
-# 官方 _global_rules_text：所有人不可用时段（分钟）。
+# Global unavailability intervals in minutes, matching official _global_rules_text.
 GLOBAL_BLOCKED = [(0, 420), (420, 480), (720, 840), (1080, 1200)]
 
 
@@ -197,7 +197,7 @@ def _parse_slot(text: str):
 
 
 class SchedulingEnv(Environment):
-    """协调者找 5 个成员共同 20 分钟空闲段。"""
+    """Find a common 20-minute free slot for five members."""
 
     def __init__(self, scenario_dir: Path):
         self.scenario = scenario_dir
@@ -287,7 +287,7 @@ class SchedulingEnv(Environment):
         return obs, 0.0, False, {}
 
     def evaluate(self, final_text: str) -> str:
-        """复刻官方 _evaluate_against_ground_truth 精确匹配。"""
+        """Match the official _evaluate_against_ground_truth scheduling rules."""
         gt_path = self.scenario / "task_plans"
         if not gt_path.exists():
             return "no_ground_truth"
@@ -322,7 +322,7 @@ class SchedulingEnv(Environment):
 # ---------------------------------------------------------------------------
 
 class GridWorld:
-    """复刻 MASBench Game enhanced-interaction 物理与交付计分。"""
+    """Implement MASBench enhanced-interaction physics and delivery scoring."""
 
     ITEM_SYM = {"wood": "w", "sand": "s", "stone": "S"}
 
@@ -492,7 +492,7 @@ class GridWorld:
 
 
 class GameEnv(Environment):
-    """网格世界采集/交付。"""
+    """Expose grid-world collection and delivery actions."""
 
     def __init__(self, map_path: Path):
         self.map_path = map_path
@@ -502,7 +502,7 @@ class GameEnv(Environment):
         self._steps = 0
         self._done = False
         self.max_steps = 50
-        # 记录历史最好交付（多次 delegate 之间 world 会 reset）
+        # Retain the best delivery so far; delegation can reset the world.
         self.best_score = 0
         self.best_delivered = {}
 

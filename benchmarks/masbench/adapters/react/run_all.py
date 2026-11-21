@@ -1,7 +1,7 @@
-"""汇总 ReAct 在 90 题上的结果并生成报告。
+"""Summarize the three ReAct MASBench runs into REPORT.md and summary.json.
 
-用法: python3 run_all.py   （在三个 runner 全部跑完后执行）
-产出: results/REPORT.md 与 results/summary.json
+Usage: python3 run_all.py (run after all three task runners finish).
+Outputs: results/REPORT.md and results/summary.json.
 """
 import json
 from pathlib import Path
@@ -44,36 +44,36 @@ def main():
     sched = load("scheduling_results.jsonl")
     game = load("game_results.jsonl")
 
-    # Reasoning 指标
+    # Reasoning metrics.
     scored = [r for r in reason if r.get("f1") is not None]
     mean_f1 = sum(r["f1"] for r in scored) / len(scored) if scored else None
     f1_1 = sum(1 for r in scored if r["f1"] == 1.0)
     f1_0 = sum(1 for r in scored if r["f1"] == 0.0)
 
-    # Scheduling 指标
+    # Scheduling metrics.
     sched_status = {}
     for r in sched:
         sched_status[r.get("status", "?")] = sched_status.get(r.get("status", "?"), 0) + 1
     sched_ok = sched_status.get("ok", 0)
 
-    # Game 指标
+    # Game metrics.
     game_total = sum(r.get("score", 0) or 0 for r in game)
     game_mean = game_total / len(game) if game else None
 
     lines = []
-    lines.append("# ReAct × MASBench 90 题 实验报告\n")
-    lines.append("- 方法：ReAct（Reasoning + Acting，Thought/Action/Observation 循环）单 agent")
-    lines.append("- 模型：deepseek-v4.1-flash（关思考），温度 0")
-    lines.append("- 数据：MASBench_selected_30（Reasoning/Scheduling/Game 各 30，seed=42）\n")
+    lines.append("# ReAct × MASBench 90-task experiment report\n")
+    lines.append("- Method: single-agent ReAct (Thought/Action/Observation loop)")
+    lines.append("- Model: deepseek-v4.1-flash, thinking disabled, temperature 0")
+    lines.append("- Data: MASBench_selected_30 (30 tasks per category, seed=42)\n")
 
-    lines.append("## 1. 结果概览\n")
-    lines.append("| 任务 | 题数 | 主指标 | 总 token | 成本(CNY) | 耗时 |")
+    lines.append("## 1. Overview\n")
+    lines.append("| Task | Count | Metric | Total tokens | Cost (CNY) | Elapsed |")
     lines.append("|---|---|---|---|---|---|")
     def row(name, st, metric):
         lines.append(f"| {name} | {st['n']} | {metric} | {st['total_tokens']:,} | ¥{st['cost_cny']:.4f} | {st['wall_s']/60:.1f} min |")
     row("Reasoning", stats(reason), f"mean F1 = {mean_f1:.4f}" if mean_f1 is not None else "n/a")
     row("Scheduling", stats(sched), f"ok = {sched_ok}/{len(sched)}")
-    row("Game", stats(game), f"总分 {game_total}（均 {game_mean:.1f}）" if game_mean is not None else "n/a")
+    row("Game", stats(game), f"Total score {game_total} (mean {game_mean:.1f})" if game_mean is not None else "n/a")
 
     tot = {
         "total_tokens": stats(reason).get("total_tokens", 0) + stats(sched).get("total_tokens", 0) + stats(game).get("total_tokens", 0),
@@ -81,22 +81,22 @@ def main():
         "wall_s": stats(reason).get("wall_s", 0) + stats(sched).get("wall_s", 0) + stats(game).get("wall_s", 0),
         "llm_calls": stats(reason).get("llm_calls", 0) + stats(sched).get("llm_calls", 0) + stats(game).get("llm_calls", 0),
     }
-    lines.append(f"| **合计** | {len(reason)+len(sched)+len(game)} | — | {tot['total_tokens']:,} | ¥{tot['cost_cny']:.4f} | {tot['wall_s']/60:.1f} min |")
+    lines.append(f"| **Total** | {len(reason)+len(sched)+len(game)} | — | {tot['total_tokens']:,} | ¥{tot['cost_cny']:.4f} | {tot['wall_s']/60:.1f} min |")
     lines.append("")
-    lines.append(f"- 总 LLM 调用次数：{tot['llm_calls']:,}")
-    lines.append(f"- token 明细：total {tot['total_tokens']:,}（其中 prompt {stats(reason).get('prompt_tokens',0)+stats(sched).get('prompt_tokens',0)+stats(game).get('prompt_tokens',0):,} / completion {stats(reason).get('completion_tokens',0)+stats(sched).get('completion_tokens',0)+stats(game).get('completion_tokens',0):,}）\n")
+    lines.append(f"- Total LLM calls: {tot['llm_calls']:,}")
+    lines.append(f"- Token breakdown: total {tot['total_tokens']:,} (prompt {stats(reason).get('prompt_tokens',0)+stats(sched).get('prompt_tokens',0)+stats(game).get('prompt_tokens',0):,} / completion {stats(reason).get('completion_tokens',0)+stats(sched).get('completion_tokens',0)+stats(game).get('completion_tokens',0):,})\n")
 
-    lines.append("## 2. Reasoning（30 题，F1）\n")
-    lines.append(f"- mean F1 = **{mean_f1:.4f}**（{len(scored)} 题有答案）" if mean_f1 is not None else "- 无结果")
-    lines.append(f"- F1=1.0（完全正确）：{f1_1} 题；F1=0（全错）：{f1_0} 题")
+    lines.append("## 2. Reasoning (30 tasks, F1)\n")
+    lines.append(f"- mean F1 = **{mean_f1:.4f}** ({len(scored)} answered tasks)" if mean_f1 is not None else "- No results")
+    lines.append(f"- F1=1.0 (exact): {f1_1} tasks; F1=0 (incorrect): {f1_0} tasks")
 
-    lines.append("\n## 3. Scheduling（30 场景）\n")
-    lines.append(f"- 状态分布：{sched_status}")
-    lines.append(f"- 成功率（ok / 精确匹配 ground-truth 槽位）：**{sched_ok}/{len(sched)}**")
+    lines.append("\n## 3. Scheduling (30 scenarios)\n")
+    lines.append(f"- Status counts: {sched_status}")
+    lines.append(f"- Success rate (ok / exact ground-truth slots): **{sched_ok}/{len(sched)}**")
 
-    lines.append("\n## 4. Game（30 地图，交付计分）\n")
-    lines.append(f"- 总分：**{game_total}**，平均每地图 {game_mean:.1f}" if game_mean is not None else "- 无结果")
-    # 每类型交付
+    lines.append("\n## 4. Game (30 maps, delivery score)\n")
+    lines.append(f"- Total score: **{game_total}**, mean per map {game_mean:.1f}" if game_mean is not None else "- No results")
+    # Delivery totals per item type.
     if game:
         agg = {}
         for r in game:
@@ -106,13 +106,13 @@ def main():
         for r in game:
             for k, v in (r.get("target") or {}).items():
                 tgt[k] = v
-        lines.append(f"- 交付汇总：{agg}")
-        lines.append(f"- 目标：{tgt}")
+        lines.append(f"- Delivery totals: {agg}")
+        lines.append(f"- Targets: {tgt}")
 
-    lines.append("\n## 5. 说明\n")
-    lines.append("- 适配层代码位于 `react_adapter/`，未改动 ReAct-master 与 MASBench 官方文件（仅导入官方 F1 评分函数）。")
-    lines.append("- 评分口径：Reasoning 复用官方 `cal_f1_score`；Scheduling 复刻官方槽位→units 精确匹配；Game 复刻官方 enhanced-interaction 物理与交付计分。")
-    lines.append("- 逐题明细见 `results/{reasoning,scheduling,game}_results.jsonl`。")
+    lines.append("\n## 5. Notes\n")
+    lines.append("- Adapter: `benchmarks/masbench/adapters/react/`; imports the official F1 evaluator.")
+    lines.append("- Scoring: official Reasoning F1, Scheduling slot-to-unit exact matching, and Game enhanced-interaction physics and delivery rules.")
+    lines.append("- Per-task results: `results/{reasoning,scheduling,game}_results.jsonl`.")
 
     report = "\n".join(lines) + "\n"
     (RES / "REPORT.md").write_text(report, encoding="utf-8")
@@ -124,7 +124,7 @@ def main():
     }
     (RES / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(report)
-    print("已写入 results/REPORT.md 与 results/summary.json")
+    print("Wrote results/REPORT.md and results/summary.json")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
-"""本地 Docker 沙盒后端：让 MAC-Bench 工程题在本机 Docker 容器里跑，替代 Modal 云。
+"""Run MAC-Bench engineering tasks through the local Docker CLI.
 
-把 ModalSandboxBackend 换成对本地 `docker` CLI 的调用。工程题的镜像就是标准
-Docker Hub 镜像（如 python:3.11-slim），setup 是普通 shell 脚本，本地完全可执行。
+This backend replaces ModalSandboxBackend with calls to the local `docker` CLI.
+Engineering tasks use standard Docker Hub images (such as python:3.11-slim) and
+ordinary shell setup scripts, so they can run locally.
 
-用法：在 run_macbench.py 里 `open_task(rec, dir, backend=DockerSandboxBackend())` 注入。
-依赖：本机安装 Docker 并启动 daemon（Docker Desktop 或 colima）。
+Inject it in run_macbench.py with `open_task(rec, dir, backend=DockerSandboxBackend())`.
+Requires Docker with its daemon running (Docker Desktop or Colima).
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from mac_bench.runtime.sandbox.base import (
 
 
 def _docker(args, *, input_bytes=None, timeout=None, check=False):
-    """跑一条 docker 命令，返回 CompletedProcess。"""
+    """Run a Docker CLI command and return its CompletedProcess."""
     cmd = ["docker", *args]
     try:
         p = subprocess.run(
@@ -46,7 +47,7 @@ def _b64encode(data: bytes) -> str:
 
 
 class DockerSandboxBackend(SandboxBackend):
-    """实现 MAC-Bench 的 SandboxBackend 接口，用本地 docker 容器执行。"""
+    """Implement MAC-Bench SandboxBackend using local Docker containers."""
 
     def __init__(self, timeout: int = 600):
         self.timeout = timeout
@@ -63,7 +64,7 @@ class DockerSandboxBackend(SandboxBackend):
         img = snapshot or image
         if not img:
             raise ValueError("create requires image or snapshot")
-        # 首次使用先确保本地有该镜像（snapshot 是本地 commit 的镜像，必然在；image 可能要 pull）
+        # Pull missing images; snapshot images are already available locally.
         if image and _docker(["image", "inspect", image]).returncode != 0:
             _docker(["pull", image], check=True)
         cid = "mb-" + uuid.uuid4().hex[:12]
@@ -72,11 +73,11 @@ class DockerSandboxBackend(SandboxBackend):
             args += ["--network", "none"]
         args += [img, "sh", "-c", "exec sleep infinity"]
         _docker(args, check=True)
-        # 只建最基础的 /work；子目录（/work/project、/work/grader 等）按需由 write_file/upload_tree
-        # 的 mkdir -p 创建。切勿预建 /work/project：consumer 验证器依赖它不存在来证明环境干净。
+        # Create only /work; write_file/upload_tree create subdirectories on demand.
+        # Do not precreate /work/project: consumer validation uses its absence to check a clean environment.
         _docker(["exec", cid, "sh", "-c", "mkdir -p /work"], check=True)
-        # 代理的 fake-ip 对 HTTP 明文（80）不稳定，对 HTTPS 稳定：把 apt 源统一转成 HTTPS。
-        # setup 脚本里的 apt-get / pip 都会受益；HTTPS 有 SNI，代理能正确识别真实域名。
+        # Rewrite apt sources to HTTPS because proxy fake-IP handling is unreliable on HTTP.
+        # HTTPS SNI lets the proxy route apt-get and pip traffic to the correct host.
         _docker(
             ["exec", cid, "sh", "-c",
              "for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do "
@@ -151,7 +152,7 @@ class DockerSandboxBackend(SandboxBackend):
         with tarfile.open(fileobj=buf, mode="w:gz") as tar:
             tar.add(local_dir, arcname=".")
         data = buf.getvalue()
-        # docker cp - 从 stdin 复制要求目标必须是目录，这里改用 exec + tar 从 stdin 解压
+        # Extract stdin with exec/tar because docker cp from stdin requires a directory target.
         script = f"mkdir -p {shlex.quote(remote_dir)} && tar xzf - -C {shlex.quote(remote_dir)}"
         _docker(
             ["exec", "-i", sandbox.id, "sh", "-c", script],

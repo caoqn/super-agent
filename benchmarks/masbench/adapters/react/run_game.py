@@ -1,11 +1,11 @@
-"""ReAct 适配 —— MASBench Game（30 地图）。
+"""ReAct adapter for 30 MASBench Game maps.
 
-单 ReAct agent 在网格世界探索/采集/交付。工具：observe / move / pick_up / put_down。
-物理与计分严格复刻官方 enhanced-interaction 语义：
-- 移动被墙/边界阻挡；坐标 x 左→右、y 下→上（UP=+y）。
-- 单类型携带；PICK_UP 不可从 table；QTY 受携带余量与 tile 可用量限制。
-- PUT_DOWN 受 tile 可放置容量（table 的 per-type 剩余）限制。
-- 计分 = sum(min(桌上各类型数量, target_items))。
+A single ReAct agent explores, collects, and delivers items in a grid world using observe / move / pick_up / put_down tools.
+Physics and scoring reproduce the official enhanced-interaction semantics:
+- Movement is blocked by walls and boundaries; x increases left to right, y increases bottom to top (UP=+y).
+- Agents carry one item type at a time. PICK_UP cannot collect from a table; QTY is limited by remaining capacity and the tile's available items.
+- PUT_DOWN is limited by the tile's remaining per-type table capacity.
+- Score = sum(min(item count on table, target_items)).
 """
 import json
 import re
@@ -104,7 +104,7 @@ class GridWorld:
         R = self.view_size // 2
         ax, ay = self.agent["x"], self.agent["y"]
         rows = []
-        for dy in range(R, -R - 1, -1):  # 从 +R 到 -R，顶部是北(+y)
+        for dy in range(R, -R - 1, -1):  # Render rows from +R to -R, with north (+y) at the top.
             row = []
             for dx in range(-R, R + 1):
                 x, y = ax + dx, ay + dy
@@ -119,7 +119,7 @@ class GridWorld:
                 elif c["terrain"] == "table":
                     row.append("T")
                 else:
-                    # 有物品则显示物品符号
+                    # Display an item symbol for occupied tiles.
                     if c["items"]:
                         first = sorted(c["items"].items(), key=lambda kv: -kv[1])[0][0]
                         row.append(self.ITEM_SYM.get(first, "?"))
@@ -289,8 +289,8 @@ def main():
               f"steps={rec['steps']} tok={rec['total_tokens']} {rec['wall_s']}s", flush=True)
 
     if recs:
-        print(f"\n=== Game 汇总 ===\n地图 {len(recs)}  总分 {sum(r['score'] for r in recs)}  "
-              f"平均 {sum(r['score'] for r in recs) / len(recs):.2f}")
+        print(f"\n=== Game summary ===\nMaps {len(recs)}  Total score {sum(r['score'] for r in recs)}  "
+              f"Mean {sum(r['score'] for r in recs) / len(recs):.2f}")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,11 @@
-"""Download the pinned public runtime; no Git or GitHub login is required."""
+"""Download or verify the pinned runtime from a configurable source repository."""
 import argparse
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -25,13 +27,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, default=ROOT / "external/EvoTeam")
     parser.add_argument("--no-install", action="store_true", help="Only download and verify source")
+    parser.add_argument("--source-repository", default=os.environ.get("EVOTEAM_SOURCE_REPOSITORY", ""),
+                        help="GitHub owner/repository containing the pinned runtime commit "
+                             "(defaults to EVOTEAM_SOURCE_REPOSITORY)")
     args = parser.parse_args()
     lock = json.loads((ROOT / "methods/Evoteam/source-lock.json").read_text())
     destination = args.destination.expanduser().resolve()
     if destination.exists():
         verify_source(destination, lock)
     else:
-        url = f'https://codeload.github.com/{lock["repository"]}/tar.gz/{lock["revision"]}'
+        repository = args.source_repository.strip()
+        if not repository:
+            parser.error("A fresh download requires --source-repository owner/repository or "
+                         "EVOTEAM_SOURCE_REPOSITORY pointing to the pinned runtime. "
+                         "Alternatively, use --destination with an existing runtime checkout; "
+                         "see methods/Evoteam/README.md.")
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+            parser.error("--source-repository must be a GitHub owner/repository")
+        url = f'https://codeload.github.com/{repository}/tar.gz/{lock["revision"]}'
         with urllib.request.urlopen(url, timeout=120) as response:
             archive = response.read()
         destination.parent.mkdir(parents=True, exist_ok=True)

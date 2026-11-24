@@ -1,6 +1,6 @@
 # EvoTeam Benchmark Adapter
 
-The method source is obtained from the [upstream EvoTeam repository](https://github.com/caoqn/EvoTeam) at the revision recorded in `source-lock.json`. This repository stores benchmark adapters, experiment configurations, initial pools, and the source version lock; it does not include the method implementation or generated training artifacts.
+The official method source is [DEEP-JLU/EvoTeam](https://github.com/DEEP-JLU/EvoTeam). These adapters require the separate `individual-benchmark-v1` runtime pinned in `source-lock.json`. Its revision is not available in the official repository. This repository stores benchmark adapters, experiment configurations, initial pools, and the runtime version lock; it does not include the method implementation or generated training artifacts.
 
 ## Install the Pinned Source Version
 
@@ -9,13 +9,17 @@ Use Python 3.11 and run the following commands from the evaluation repository ro
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+# Set this to a GitHub owner/repository containing the pinned runtime commit.
+export EVOTEAM_SOURCE_REPOSITORY='<owner>/<runtime-repository>'
 python scripts/setup_evoteam.py
 cp .env.example .env
 # Set DEV_API_BASE and DEV_API_KEY in .env.
 export META_TEAM_ENV_FILE="$PWD/.env"
 ```
 
-The installer downloads the exact commit specified by `source-lock.json` from public GitHub, verifies each source file's SHA-256, and installs runtime dependencies; GitHub authentication is not required. By default it installs into the Git-ignored `external/EvoTeam/` directory. Add `--no-install` to download only, or use `--destination` to select another location. For a non-default location, export `EVOTEAM_ROOT` in the shell; setting it only in `.env` does not change source resolution. Existing directories are not overwritten, and incompatible or modified source is reported as an error.
+Set `EVOTEAM_SOURCE_REPOSITORY` to a GitHub `owner/repository` containing the pinned runtime commit, or pass `--source-repository owner/repository`. The installer downloads the exact commit specified by `source-lock.json`, verifies each source file's SHA-256, and installs runtime dependencies. A fresh download requires this source setting; the official repository cannot supply the pinned runtime commit. A public runtime mirror requires no GitHub authentication.
+
+By default the installer uses the Git-ignored `external/EvoTeam/` directory. To use an existing runtime checkout, run `python scripts/setup_evoteam.py --destination /path/to/EvoTeam`; no source repository setting is needed when the directory already exists. Add `--no-install` to verify or download without installing dependencies. For a non-default location, export `EVOTEAM_ROOT` in the shell; setting it only in `.env` does not change source resolution. Existing directories are not overwritten, and incompatible or modified source is reported as an error.
 
 The default model is `deepseek-chat`. The three benchmark adapters are in `benchmarks/{gaia,macbench,masbench}/adapters/evoteam/`; `methods/Evoteam/` contains only shared source setup, the version lock, and documentation. All three training configurations use `workers=1` and enable `--evolve`. Model variables in an explicit `META_TEAM_ENV_FILE` may override configuration defaults; check `META_TEAM_MODEL`, `TEAM_SELECTOR_MODEL`, and `TEAM_REFLECTION_MODEL` in `.env`. Set data paths with shell `export` commands.
 

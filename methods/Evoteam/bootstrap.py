@@ -7,13 +7,15 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_URL = "https://github.com/caoqn/EvoTeam"
+SOURCE_URL = "https://github.com/DEEP-JLU/EvoTeam"
 
 
 def source_root():
     value = os.environ.get("EVOTEAM_ROOT", "").strip() or str(REPO_ROOT / "external/EvoTeam")
     if not Path(value).expanduser().exists():
-        raise RuntimeError(f"Run python scripts/setup_evoteam.py or set EVOTEAM_ROOT to the pinned source checkout; see {SOURCE_URL} and methods/Evoteam/README.md")
+        raise RuntimeError("Set EVOTEAM_SOURCE_REPOSITORY and run python scripts/setup_evoteam.py "
+                           "or set EVOTEAM_ROOT to the pinned runtime checkout; see methods/Evoteam/README.md. "
+                           f"Official method repository: {SOURCE_URL}.")
     root = Path(value).expanduser().resolve()
     required = ("benchmarks/adapter.py", "core/runner.py", "core/task_budget.py",
                 "core/team_selector.py", "main.py", "tools/macbench.py")

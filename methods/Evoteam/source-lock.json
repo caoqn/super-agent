@@ -1,5 +1,6 @@
 {
-  "repository": "caoqn/EvoTeam",
+  "upstream_repository": "DEEP-JLU/EvoTeam",
+  "repository_env": "EVOTEAM_SOURCE_REPOSITORY",
   "revision": "7c155192655d5092e36ba8928aa6c8522ce57336",
   "api": "individual-benchmark-v1",
   "files": {

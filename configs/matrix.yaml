@@ -2,6 +2,9 @@
 methods:
   agentnet: [gaia, macbench, masbench]
   aorchestra: [macbench, masbench]
+  evoteam: [gaia, macbench, masbench]
   react: [macbench, masbench]
+  skillmas: [gaia, macbench, masbench]
   vanilla: [masbench]
+  manager3: [macbench, masbench]
   super_agent: [gaia, macbench, masbench]
